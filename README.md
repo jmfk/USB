@@ -4,14 +4,14 @@ USB is an independent FM-1 firmware experiment, extracted from M-vave on2026-11-
 Two stereo USB audio sources plus an output device, with per-input USB MIDI1
 routing to any set of output ports. Firmware and hardware support remain experimental.
 
-Latest prepared package: **R5, build1809377051**, not confirmed installed or
+Latest prepared package: **R6, build1448665588**, not confirmed installed or
 hardware-verified. The owner-operated R4 installer reported success before the
-rename; R5 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
+rename; R6 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
 model are still pending. MIDI software capacity is32 inputs and32 outputs;
 this is not a measured throughput claim.
 
-- [R5 controls, formats and test procedure](manual-flash/usb-host-probe-r5/README.md)
-- [R5 owner-operated manual installer](<Flash USB R5.command>)
+- [R6 controls, formats and test procedure](manual-flash/usb-host-probe-r6/README.md)
+- [R6 owner-operated manual installer](<Flash USB R6.command>)
 - [Work and verification notes](usb-host-probe/WORK-NOTE.md)
 - [Requirements and decisions](specs/index.md)
 - [Extraction details](MIGRATION.md)
@@ -20,12 +20,16 @@ Project folder: `/Users/jmfk/code/USB`. Public repository:
 [jmfk/USB](https://github.com/jmfk/USB). Historical `usb-host-probe` technical
 paths and package IDs remain stable; existing R1–R4 packages are immutable.
 
+R6 avoids repeated screen blanking on an unchanged page and updates changed
+text boxes individually. The fix is locally tested; panel confirmation after
+manual installation remains pending.
+
 ## Layout
 
 `usb-host-probe/firmware` contains the experiment overlay. `vendor/dinghy` is a
 local GPL-3.0 base snapshot, with its license/provenance in vendor/README.md.
 `usb-host-probe/tests` contains focused transport/router/UI and collector checks.
-`usb-host-probe/releases` and `manual-flash` preserve immutable R1/R2/R3/R4/R5 files;
+`usb-host-probe/releases` and `manual-flash` preserve immutable R1/R2/R3/R4/R5/R6 files;
 R1 was internal and has no manual handoff. Existing package IDs do not change.
 
 ## Local build
@@ -56,7 +60,7 @@ python3 usb-host-probe/build.py --verify-only
 
 This runs focused local checks and the firmware cross-build without making a new
 release or accessing devices. To prepare a new version, omit --verify-only and
-choose an unused revision (the default is nowR6), then run prepare_manual.py for
+choose an unused revision (the default is nowR7), then run prepare_manual.py for
 that same revision. Never overwrite or edit an existing released package.
 No firmware is installed by build.py or prepare_manual.py. Only the owner may
 launch the manual installer; Codex may run its file-only --check.

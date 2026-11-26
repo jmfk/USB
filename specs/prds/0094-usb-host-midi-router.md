@@ -27,3 +27,5 @@ related_adrs: [ADR-0108]
 - 2026-11-26: canonical project moved to /Users/jmfk/code/USB. See [ADR-0001](../adrs/active/0001-independent-project.md) and [migration evidence](../../MIGRATION.md). Released bytes and hardware status are unchanged.
 
 - 2026-11-26: the project is named USB; canonical folder `/Users/jmfk/code/USB`, repository [jmfk/USB](https://github.com/jmfk/USB). See [ADR-0002](../adrs/active/0002-usb-project-name.md). R5 contains the new display name; previous package bytes remain unchanged.
+
+- 2026-11-26: R6 prepares a display-refresh fix for idle-page flicker: unchanged frames do no LCD I/O; changed text boxes update individually. Focused UI regressions and target build pass. See [work note](../../usb-host-probe/WORK-NOTE.md). R6 is prepared, not installed; panel and USB hardware acceptance remain pending.

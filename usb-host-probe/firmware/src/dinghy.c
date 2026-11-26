@@ -33,7 +33,39 @@ static void hp_host_stop(void){hp_owns_usb=0;}
 static void app_audio(int32_t *out,uint32_t n) {(void)out;(void)n;}
 static const char *const hp_states[]={"DEVICE / NOT ARMED","ARMED / PRESS PLAY","DISCOVERING USB","RUNNING","BUS TEST COMPLETE","TEST FAILED","STOPPED","READY / SET ROUTES"};
 static const char *const hp_reasons[]={"", "NEED 2 IN + 1 OUT", "REGISTER TIMEOUT", "FRAME DEADLINE", "USB TRANSFER ERROR", "NO USB FRAME CLOCK", "BUFFER DRIFT/NO AUDIO", "ARM ON COMPUTER", "DEVICE/FORMAT SETUP", "INCOMPLETE RUN", "MIDI ROUTING ERROR", "NO MIDI IN/OUT"};
-static void hp_text(uint32_t y,const char *text) {draw_text_box(4,y,232,&FONT_S,text,C_WHITE,0);}
+/* Keep text, not a framebuffer. Unchanged pages do no LCD I/O; changed text
+ * boxes replace their own background and glyphs together. Only a layout change
+ * clears the panel, so the idle page never repeatedly blanks on real hardware. */
+enum {HP_UI_BOXES=24,HP_UI_TEXT=40};
+typedef struct {uint16_t x,y,w;uint8_t align;char text[HP_UI_TEXT];} hp_ui_box_t;
+static hp_ui_box_t hp_ui_frames[2][HP_UI_BOXES];
+static uint8_t hp_ui_frame,hp_ui_count[2],hp_ui_valid;
+static void hp_box(uint32_t x,uint32_t y,uint32_t w,const char *text,uint32_t align)
+{
+    uint32_t i=0;hp_ui_box_t *box;
+    if(hp_ui_count[hp_ui_frame]>=HP_UI_BOXES)return;
+    box=&hp_ui_frames[hp_ui_frame][hp_ui_count[hp_ui_frame]++];
+    box->x=x;box->y=y;box->w=w;box->align=align;
+    memset(box->text,0,sizeof box->text);
+    while(text[i] && i+1<sizeof box->text){box->text[i]=text[i];i++;}
+}
+static uint32_t hp_present(void)
+{
+    uint32_t old=hp_ui_frame^1u,n=hp_ui_count[hp_ui_frame],layout=!hp_ui_valid || n!=hp_ui_count[old],writes=0;
+    for(uint32_t i=0;i<n && !layout;i++){
+        hp_ui_box_t *a=&hp_ui_frames[hp_ui_frame][i],*b=&hp_ui_frames[old][i];
+        layout=a->x!=b->x || a->y!=b->y || a->w!=b->w || a->align!=b->align;
+    }
+    if(layout){lcd_fill(0,0,240,240,C_BLACK);writes++;}
+    for(uint32_t i=0;i<n;i++){
+        hp_ui_box_t *box=&hp_ui_frames[hp_ui_frame][i];
+        if(layout || memcmp(box->text,hp_ui_frames[old][i].text,HP_UI_TEXT)){
+            draw_text_box(box->x,box->y,box->w,&FONT_S,box->text,C_WHITE,box->align);writes++;
+        }
+    }
+    hp_ui_valid=1;hp_ui_frame^=1u;return writes;
+}
+static void hp_text(uint32_t y,const char *text) {hp_box(4,y,232,text,0);}
 static void hp_number(uint32_t y,const char *name,uint32_t value)
 {
     char line[32],digits[12];uint32_t n=0,j=0;
@@ -71,11 +103,11 @@ static void hp_port_heading(uint32_t y,const char *name,uint32_t index,const hm_
     line[n++]=' ';line[n++]='E';line[n++]=hex[p->ep>>4];line[n++]=hex[p->ep&15];line[n]=0;
     hp_text(y,line);
 }
-static void hp_draw(void)
+static uint32_t hp_draw(void)
 {
     uint32_t state=hp_v[H_STATE],editable=!hp_running && !hm_stopping;
     if(state>HP_READY)state=HP_FAILED;
-    lcd_fill(0,0,240,240,C_BLACK);
+    hp_ui_count[hp_ui_frame]=0;
     hp_text(4,hp_audio_enabled?"USB AUDIO+MIDI " HP_LABEL:"USB MIDI ROUTER " HP_LABEL);hp_text(30,hp_states[state]);
     if(hp_routes_view){
         if(hm_nin){
@@ -106,8 +138,9 @@ static void hp_draw(void)
         if(i==5 && (hp_routes_view || state==HP_READY))label="BACK";
         if(hp_routes_view && editable && hm_nin){if(i==6)label="ALL";if(i==7)label="NONE";}
         if(i==10)label=state==HP_READY?"PLAY":hp_owns_usb?"STOP":(!hp_audio_enabled || state==HP_ARMED)?"PLAY":"";
-        draw_text_box(x,y,40,&FONT_S,label,C_WHITE,1);
+        hp_box(x,y,40,label,1);
     }
+    return hp_present();
 }
 static void hp_controls(uint32_t pressed)
 {

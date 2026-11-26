@@ -159,3 +159,45 @@ Local evidence:
 Handoff: `Flash USB R5.command` and `manual-flash/usb-host-probe-r5/`.
 R5 is PREPARED_NOT_INSTALLED; hardware verification flags remain false. The
 owner must start installation manually to see the new firmware name on FM-1.
+
+
+## R6: static startup display refresh, 2026-11-26
+
+Batch goal: remove repeated text blanking observed on the R4 idle page. The app
+had reached DEVICE / NOT ARMED; hp_draw cleared all 240x240 pixels on every
+scheduled refresh even when no displayed value changed. Native final-frame
+screenshots had not modeled the panel's visible clear/redraw interval.
+
+The overlay now retains two small text-box lists, not pixel framebuffers.
+Unchanged pages issue zero LCD writes. A changed value or route replaces only
+its own background/text box. A layout change clears once and redraws every
+position, including all twelve physical button slots. All controls, USB roles,
+routing/cleanup and updater paths remain unchanged. Vendor sources and all
+previous sealed releases/manual handoffs remain unchanged.
+
+Local evidence:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r6 --verify-only`:
+  PASS. UI regression checks repeated idle refreshes with zero LCD writes,
+  single-box rate/route/counter changes, stable repeat frames and layout changes
+  matching a fresh full redraw. Existing physical-control checks also pass.
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r6`: PASS; the
+  existing builder repeated its integrated checks while sealing the package.
+  Audio/USB/MIDI sanitizer models, six collector checks, two descriptor checks,
+  target FM-1 cross-build, RAM no-call and MMIO gates passed. Only the two
+  existing MIDI-model unused audio-variable warnings remain.
+- Build1448665588; image39580 B, RAM54032/98304 B,
+  pool30720/344064 B. No full pixel framebuffer was added.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r6`:
+  PASS, installer/collector/descriptor-reader file-only checks.
+- Root R6 launcher shell syntax and `--check`: PASS. Previous 137 immutable
+  package files match their pre-R6 fingerprints. Python syntax, specs governance
+  and source whitespace checks pass. Next unused build/prepare default is R7.
+- Native idle page snapshots remain stable; existing routed UI snapshots retain
+  their layout/content apart from the revision label. This is visual/model
+  evidence, not measurement of the physical LCD timing.
+
+Handoff: `Flash USB R6.command` and `manual-flash/usb-host-probe-r6/`.
+PREPARED_NOT_INSTALLED. No installer, recovery or flash operation was started by
+Codex; no MIDI/device access was made. Panel behavior after installing R6 and
+actual audio/MIDI hardware acceptance remain unverified. Owner video/frame
+analysis stays in ignored .build-env; no hardware result media is committed.
