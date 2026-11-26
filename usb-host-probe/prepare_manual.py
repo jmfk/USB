@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parent.parent
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision',default='usb-host-probe-r6')
+    ap.add_argument('--revision',default='usb-host-probe-r14')
     args=ap.parse_args();revision=args.revision
     if not re.fullmatch(r'usb-host-probe-r[1-9][0-9]*',revision):ap.error('Invalid revision')
     release=ROOT/'usb-host-probe/releases'/revision
@@ -26,7 +26,7 @@ def main():
             raise ValueError('Release integrity failure: '+name)
     target.mkdir()
     package=f'FM1-{revision}.fwsc'
-    for name in (package,'identity.json','collect.py','inspect_usb.py','README.md','LICENSE','build-log.txt','staged-source.zip'):
+    for name in (package,'identity.json','collect.py','performance.py','inspect_usb.py','README.md','LICENSE','build-log.txt','staged-source.zip'):
         shutil.copy2(release/name,target/name)
     with zipfile.ZipFile(release/'staged-source.zip') as z:
         (target/'fm1_install.py').write_bytes(z.read('tools/fm1_install.py'))
@@ -55,6 +55,7 @@ exec "$PROBE_PY" "$PROBE_DIR/manual_install.py" "$@"
     subprocess.run([sys.executable,str(target/'manual_install.py'),'--check'],check=True)
     subprocess.run([sys.executable,str(target/'collect.py'),'--check'],check=True)
     subprocess.run([sys.executable,str(target/'inspect_usb.py'),'--check'],check=True)
+    subprocess.run([sys.executable,str(target/'performance.py'),'--check'],check=True)
     print('PREPARED_NOT_INSTALLED:',launcher)
 
 

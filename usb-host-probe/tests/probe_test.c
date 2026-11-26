@@ -180,7 +180,7 @@ static void fm1_usb_ep_send(uint32_t ep,void *p,uint32_t n)
     }
 }
 #include "probe_usb.h"
-static uint8_t fake_wire[400];static uint32_t fake_wire_len;
+static uint8_t fake_wire[464];static uint32_t fake_wire_len;
 static void ota_wr32(uint8_t *p,uint32_t v){for(uint32_t i=0;i<4;i++)p[i]=(uint8_t)(v>>(8*i));}
 static uint32_t ota_pack7(const uint8_t *p,uint32_t n,uint8_t *out)
 {
@@ -199,6 +199,28 @@ static void test_wire(const char *fixture)
     }
     assert(k==332 && !memcmp(raw,hp_frozen,sizeof hp_frozen));
     if(fixture){FILE *f=fopen(fixture,"wb");assert(f);assert(fwrite(raw,1,k,f)==k);fclose(f);}
+    /* Bounded diagnostics, immutable read/CRC and independent acknowledgement. */
+    hp_diag_valid=0;memset(hp_diag_nonce,0,sizeof hp_diag_nonce);hp_diag_begin(fm1_ms,HP_BUILD_TAG);hp_diag_finish(fm1_ms,HP_STOPPED,HP_INCOMPLETE);assert(!hp_diag_valid);
+    uint8_t arm_req[21]={0x7d,0x55,0x48,1,12};
+    for(uint32_t j=0;j<4;j++)put7(arm_req+5+4*j,j+1,4);
+    hp_sysex(arm_req,21);assert(!fake_wire[6] && hp_diag_nonce[3]==4);
+    put7(arm_req+5,99,4);hp_sysex(arm_req,21);assert(fake_wire[6]==3 && hp_diag_nonce[0]==1);
+    put7(arm_req+5,1,4);hp_sysex(arm_req,21);assert(!fake_wire[6]);
+    hp_diag_begin(fm1_ms,HP_BUILD_TAG);assert(hp_diag[25]==1 && !hp_diag_nonce[0]);
+    for(uint32_t j=0;j<18;j++){fm1_ms+=1000;hp_diag_sample(fm1_ms,25+j);}
+    hp_diag_stop(fm1_ms,HP_STOPPED,HP_INCOMPLETE);hp_freeze();
+    assert(hp_diag_valid && hp_diag[22]==15 && hp_diag[23]>0 && hp_diag[19]==42);
+    req[4]=9;hp_sysex(req,5);assert(!fake_wire[6]);a=b=k=0;
+    for(uint32_t j=7;j+1<fake_wire_len;j++){a|=(uint32_t)fake_wire[j]<<b;b+=7;if(b>=8){raw[k++]=a&255;a>>=8;b-=8;}}
+    assert(k==sizeof hp_diag_frozen+4 && !memcmp(raw,hp_diag_frozen,sizeof hp_diag_frozen));
+    if(fixture){char path[512];snprintf(path,sizeof path,"%s.performance",fixture);FILE *f=fopen(path,"wb");assert(f);assert(fwrite(raw,1,k,f)==k);fclose(f);}
+    uint32_t saved_crc=hp_diag_crc;hp_diag[19]++;hp_freeze();assert(hp_diag_crc==saved_crc);
+    req[4]=11;hp_sysex(req,5);assert(!fake_wire[6]);
+    hp_owns_usb=1;req[4]=9;hp_sysex(req,5);assert(fake_wire[6]==1);hp_owns_usb=0;
+    req[4]=10;put7(req+5,hp_diag_frozen[2],4);put7(req+9,(hp_diag_crc^1)&0x0fffffff,4);
+    hp_sysex(req,13);assert(hp_diag_valid && fake_wire[6]==2);
+    put7(req+9,hp_diag_crc&0x0fffffff,4);hp_sysex(req,13);assert(!hp_diag_valid && !fake_wire[6]);
+    req[4]=9;hp_sysex(req,5);assert(fake_wire[6]==3);
     req[4]=1;put7(req+5,77,4);put7(req+9,10000,3);put7(req+12,48000,3);req[15]=25;
     hp_sysex(req,17);assert(fake_wire[6]==3 && hp_frozen_valid); /* cannot replace uncollected snapshot */
     req[4]=3;put7(req+5,hp_frozen[H_RUN],4);put7(req+9,hp_frozen_crc&0x0fffffffu,4);
@@ -305,6 +327,12 @@ int main(int argc,char **argv)
     reset_case(48000,120);hp_host_start();usb.timeouts=1;hp_tick();
     assert(hp_v[H_STATE]==HP_FAILED && hp_v[H_REASON]==HP_IO);usb.timeouts=0;hp_host_stop();
     midi_model();
+    /* Failure timestamps the forwarding boundary, not later USB teardown. */
+    hp_diag_valid=0;hp_diag_nonce[0]=77;fm1_ms=1000;hp_diag_begin(fm1_ms,HP_BUILD_TAG);
+    hm_events=100;hm_fanout=200;hm_forward=1;hp_running=1;fm1_ms=1100;hp_fail(HP_IO);
+    assert(hp_diag_stopped&&hp_diag[3]==100&&hp_diag[10]==100&&hp_diag[4]==HP_FAILED);
+    fm1_ms=3100;hp_freeze();assert(hp_diag_valid&&hp_diag_frozen[3]==100);
+    puts("PASS: failure diagnostics exclude post-forwarding USB teardown time");
     puts("PASS: real host code/model: discovery, three addresses, serial packets, mix identity, cadence, deadline/error/length aborts");
     return 0;
 }

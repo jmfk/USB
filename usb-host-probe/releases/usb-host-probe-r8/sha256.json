@@ -1,0 +1,19 @@
+{
+  "FM1-usb-host-probe-r8.bin": "b0e64fa283e790c8d2e5ccae896c9fb4e817502ae2c9d06a2bc243e8a7af63aa",
+  "FM1-usb-host-probe-r8.dis": "3af246ee630e4d17aece1fbb19969f45e9dd3c59998caaa534d3422524619347",
+  "FM1-usb-host-probe-r8.elf": "43ab27412e8187873d87e2f5c04e9640bd39025f9a469665e21739e44ea952cf",
+  "FM1-usb-host-probe-r8.fwsc": "3bafc81e9a438c82b73c46ea64c36c4a2eb4e4a566569752dd2cdefab1c85eb2",
+  "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+  "README.md": "520062f5022367e6ca8b8eba62a2e34ae6f5d565abb275a074ab829d44587300",
+  "build-log.txt": "63c3831778c79cfcaa712e94e00bb2639ee62806eed5f8a829ccc69cb92084c1",
+  "collect.py": "9a2d8797fd1a2e173486df6a1570e905819e8dbc825d647af41fdab15071d9a9",
+  "dinghy-100.png": "f597506ceb33e59831aa4a914626f9c9a087abac34b7d8d3068aa6f56e40a11a",
+  "dinghy-1000.png": "7d0ea1b89bcb8c8c543804a9002d579ad00ba0fc525a2096a97df3844c61806e",
+  "dinghy-1250.png": "4ccf12406a77d5be3151924368dc539c1cce99d3eec6fd357be4ab5d9fa4098e",
+  "dinghy-1650.png": "65bcbe224077b280f5c9df239e027e0ba2a4925ae2d743cb7057c96e31009266",
+  "dinghy-500.png": "b1ab9a0826eb670bd7f3b3fdda8b788c8e136278efb0ee847e7c5ead7f9ee50a",
+  "dinghy-850.png": "99d4b77cdcad14e1e628d1d83a3f89b9fb7f0a1d729cd4d47a02d5553ef25eb0",
+  "identity.json": "7818d2da6c9ec530d4c642347eb2b4e655424caff9d1a129e6b75d8adb211653",
+  "inspect_usb.py": "e300cde8189686344800e2cf30a4f09c8b5626ce1c0ee0d8178af394039ab09e",
+  "staged-source.zip": "853ad157cbaced0f42ea3a03b8f99c6b6c3966dff8ebeb858b9254c386096011"
+}

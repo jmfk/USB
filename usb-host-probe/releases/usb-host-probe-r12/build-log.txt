@@ -1,0 +1,39 @@
+PASS: actual MIDI transport: composite discovery, virtual cables, audio coexistence, idle IN, NAK retries, late ACK, stop cleanup
+PASS: real host code/model: discovery, three addresses, serial packets, mix identity, cadence, deadline/error/length aborts
+In file included from tests/midi_core_test.c:5:
+firmware/src/probe_core.h:36:35: warning: 'hp_defer_run' defined but not used [-Wunused-variable]
+   36 | static uint8_t hp_audio_enabled=1,hp_defer_run;
+      |                                   ^~~~~~~~~~~~
+PASS: MIDI core: ports, topology, atomic fan-out, cable mapping, SysEx merge, backpressure, cleanup, malformed/capacity rejection
+PASS: independent main/sub pages, remembered selection, inert navigation/modifiers, explicit actions, stopped edits, transport, evidence protection and stable redraw
+loader: image 10476 B at 0x1c0a800, bss end 0x1c0ff50
+loader: ota.bin 9062 B
+  ok    .ram_text: 916 insns, no calls
+  ok    image 42852 B of 581564; RAM .data+.bss 55076 B of 98304; pool 30720 B of 344064
+  ok    register access: hal/ only (src/, loader/ clean)
+app      /work/build/dinghy.bin  42852 B
+loader   /work/build/loader/ota.bin  9062 B
+package  /work/build/dinghy.fwsc  612218 B, identity FM-1_990
+In file included from firmware/src/probe_core.h:38,
+                 from firmware/src/dinghy.c:12:
+firmware/src/diagnostics.h: In function 'hp_diag_finish':
+firmware/src/diagnostics.h:46:2: warning: this 'if' clause does not guard... [-Wmisleading-indentation]
+   46 |  if(hm_cleanup_bad||hp_diag[4]!=state||hp_diag[5]!=reason)hp_diag_event(now,5,state,hm_cleanup_bad);hp_diag[4]=state;hp_diag[5]=reason;hp_diag[16]=hm_cleanup_bad;
+      |  ^~
+firmware/src/diagnostics.h:46:101: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'if'
+   46 |  if(hm_cleanup_bad||hp_diag[4]!=state||hp_diag[5]!=reason)hp_diag_event(now,5,state,hm_cleanup_bad);hp_diag[4]=state;hp_diag[5]=reason;hp_diag[16]=hm_cleanup_bad;
+      |                                                                                                     ^~~~~~~
+   100 ms  screen -> build/host/dinghy-100.ppm
+   500 ms  screen -> build/host/dinghy-500.ppm
+   850 ms  screen -> build/host/dinghy-850.ppm
+  1000 ms  screen -> build/host/dinghy-1000.ppm
+  1000 ms  screen -> build/host/dinghy-1000.ppm
+  1250 ms  screen -> build/host/dinghy-1250.ppm
+  1650 ms  screen -> build/host/dinghy-1650.ppm
+sound  -> build/host/dinghy.wav (79360 frames)
+screen -> build/host/dinghy-100.png
+screen -> build/host/dinghy-1000.png
+screen -> build/host/dinghy-1250.png
+screen -> build/host/dinghy-1650.png
+screen -> build/host/dinghy-500.png
+screen -> build/host/dinghy-850.png

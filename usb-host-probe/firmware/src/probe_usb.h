@@ -16,7 +16,7 @@ static void hp_w(uint32_t r,uint32_t v) {if(hp_io_fault)return;sie_wr(r,v);if(us
 static uint32_t hp_r(uint32_t r) {uint32_t v;if(hp_io_fault)return 0;v=sie_rd(r);if(usb.timeouts)hp_io_fault=1;return v;}
 static void hp_wait(uint32_t ms) {uint32_t t=fm1_ms;while(fm1_ms-t<ms)fm1_wdt_feed();}
 static void hp_fail(uint32_t reason)
-{ hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;
+{ hp_diag_stop(fm1_ms,HP_FAILED,reason);hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;
   if(hm_forward || hm_stopping){hm_forward=hm_stopping=0;if(hm_events)hm_cleanup_bad+=hm_nout;} }
 static int hp_csr0(uint32_t set,uint32_t clear)
 {
@@ -151,6 +151,7 @@ static void hp_midi_counters(void)
 static void hp_request_stop(uint32_t state,uint32_t reason)
 {
     if(hp_finishing)return;
+    hp_diag_stop(fm1_ms,state,reason);
     hm_forward=0;hp_v[H_STATE]=state;hp_v[H_REASON]=reason;
     hp_finishing=1;hp_finish_ms=fm1_ms;
 }
@@ -202,7 +203,7 @@ static uint32_t hp_frame(void)
     if(hi!=again) {hi=again;lo=hp_r(S_FRAME1);}
     return ((hi<<8)|lo)&2047;
 }
-static void hp_tick(void)
+static void hp_tick_work(void)
 {
     uint32_t frame,k;int next;
     if(!hp_running)return;
@@ -249,10 +250,17 @@ static void hp_tick(void)
     }
 }
 
+static void hp_tick(void)
+{
+ uint32_t measure=hp_running&&!hp_finishing,start=fm1_ticks();
+ hp_tick_work();if(measure)hp_diag_sample(fm1_ms,(fm1_ticks()-start)/FM1_TICKS_PER_US);
+}
+
 static void hp_run_begin(void)
 {
     hp_sched=(hp_schedule_t){.next=3,.frame=(uint16_t)hp_frame()};
     hp_begin_ms=hp_last_sof_ms=fm1_ms;hp_frame_ticks=fm1_ticks();hp_finishing=0;
+    hp_diag_begin(fm1_ms,HP_BUILD_TAG);
     hm_forward=1;hp_v[H_STATE]=HP_RUNNING;hp_running=1;
 }
 static void hp_host_start(void)

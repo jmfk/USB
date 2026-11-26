@@ -84,28 +84,32 @@ ovanstående hubbgränser. En input kan gå till noll, en, flera eller alla outp
 Ljudkortets MIDI-portar kan också användas om sådana finns och är kompatibla.
 Vanliga USB-hubbar är anslutningar, inte egna MIDI-portar.
 
-1. Anslut allt före upptäckt. För fristående routing: välj fysisk B2 **MIDI** i
-   device-läget och tryck PLAY. För ljud+MIDI: armera ljudprovet från datorn och
-   följ kabelbytet ovan. Första PLAY upptäcker och visar READY.
-2. **SELECT** väljer input; **ALGORITHM** väljer output. Rubriken visar portnummer,
-   interface (`I`) och endpoint (`E`). Raden under visar `VID:PID@hubbväg Ckabel`.
-   Kombinationen skiljer enheter och virtuella portar åt även med samma modell.
-3. **K1 höger** slår på den valda förbindelsen, **K1 vänster** slår av den.
-   **B7 ALL** kopplar vald input till alla outputs; **B8 NONE** tömmer just denna
-   inputs destinationslista. Övriga input-rutter bevaras. ALL inkluderar även
-   enhetens egna outputs; välj enskilda portar om du vill undvika den vägen.
-4. Andra **PLAY** startar. **B3 ROUTE/STATS** växlar vy. Rutter kan granskas men
-   inte redigeras under körning. **B6 BACK** lämnar route-vyn; i READY/STATS
-   avbryter BACK upptäckten utan att starta forwarding.
-5. **PLAY/STOP** stoppar input, avslutar aktuell USB-transaktion och skickar F7
-   för avbruten SysEx samt sustain-off/all-notes-off/all-sound-off på alla16
-   kanaler till använda outputs. Det kan tysta andra toner på dessa portar.
-   Misslyckad cleanup rapporteras som fel. Därefter återgår USB-porten till device.
+1. **USB → MODE**: K1 vänster väljer MIDI ONLY, K1 höger AUDIO+MIDI.
+   Lägesbyte kräver stoppat device-läge utan skyddat ljudresultat.
+2. Övre knappraden: **USB**, **MIDI/MON**, **BUS**, tom, tom, **SHIFT**.
+   Ett nytt tryck på vald MIDI-knapp växlar ROUTING/MONITOR. Undre raden har
+   tre kontextuella undermenyer, **ALT**, **PLAY/STOP** och kontextuell **APPLY**.
+   GLO är hållen SHIFT och SEQ hållen ALT; de byter aldrig meny.
+3. MIDI/ROUTING har **LINK**, **PORT** och **ACT**. LINK visar vald förbindelse;
+   SELECT väljer input och ALGORITHM output. K1 höger slår på, vänster av.
+   PORT har två sidor, input/output, med VID/PID/hubbväg/interface/endpoint/kabel.
+4. ACT: K1 höger väljer ALL, vänster NONE. Först fysisk REC/APPLY ändrar den
+   valda inputens rutter. Navigation ändrar aldrig rutter. Redigering är stoppad
+   medan routing eller MIDI-cleanup körs.
+5. MIDI/MONITOR har TRAF och ERR. USB har MODE, FMT och RES (två resultatsidor).
+   BUS visar STATE eller BUILD. Tryck igen på vald undermeny för nästa sida;
+   varje huvudmenysida och undermeny minns sitt eget läge. M och S i rubriken
+   visar respektive sidnummer. Tomma knappositioner är inaktiva.
+6. PLAY upptäcker anslutna enheter; nästa PLAY i READY startar. PLAY under
+   körning stoppar med befintlig SysEx/F7 och kanal-cleanup till använda outputs.
+   Växla menyer fritt utan att stoppa eller ändra USB-rollen. Alla enheter ska
+   vara anslutna före upptäckt; ingen hotplug. För AUDIO+MIDI krävs först samma
+   datorarmering och kabelbyte som i ljudprovet ovan.
 
 Alla rutter börjar tomma. Matrisen lever bara i RAM; identisk återupptäckt med
 samma VID/PID/hubbväg/interface/endpoint/kabel/jack bevarar den i samma session.
 Ändrad topologi tömmer hela matrisen. Ingen flashlagring, automatisk omkoppling
-eller hotplug finns. Efter fristående MIDI kan B1 AUD välja ljudprovet igen.
+eller hotplug finns. Efter fristående MIDI väljer USB/MODE och K1 höger ljudprovet igen.
 Ett ohämtat, armerat ljudresultat är skyddat tills collectorn hämtat/kvitterat det.
 
 Noter, CC, programbyte, pitchbend, aftertouch, system common, MIDI clock/start/
@@ -182,3 +186,56 @@ avbrott/återupptagning, idempotens och att ingen analog verifiering hittas på.
 Bygget körs i befintlig OrbStack-image, utan nätverk eller USB-enheter. Lokal
 verifiering och paketets minnesuppgifter dokumenteras i identity.json och
 build-log.txt. Nästa ändring efter överlämning ska bli en ny versionskatalog.
+
+
+## MIDI-prestanda och diagnostikloggar (R12 och senare)
+
+MIDI/MON-knappen växlar till MON; välj PERF för maximal servicetid och samplade
+kötoppar. Detta är inte end-to-end-latens eller total CPU-belastning. Kör samma
+externa MIDI-sekvens, tempo, routning och hubbportar när prestanda jämförs.
+
+1. Installera manuellt. Med FM-1 ansluten till datorn, spara ett nytt körnings-ID:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py arm --run-dir usb-host-probe/hardware-results/midi-canary-001
+   ```
+
+   Kommandot startar ingen trafik eller host. Välj USB/MODE MIDI ONLY med K1 vänster och sätt önskade
+   rutter i MIDI/LINK. PLAY upptäcker; nästa PLAY börjar vidarebefordra.
+2. Kör först en kort, cirka tio sekunders kontroll med låg trafik. Stoppa med
+   fysisk PLAY, låt cleanup avslutas. Ingen benchmark startas från datorn.
+3. Behåll FM-1 påslagen och flytta USB från den strömförsörjda hubben till datorn.
+   USB0 kan inte vara host och datoransluten MIDI-device samtidigt.
+4. Från projektroten, hämta via MIDI till en ny beständig lokal körningskatalog:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py fetch --run-dir usb-host-probe/hardware-results/midi-canary-001
+   ```
+
+   Vid avbrott: kör exakt samma kommando/katalog igen. Manifest, rådata, rapport
+   och COMPLETE skrivs atomiskt med fsync före ACK. Det slumpade 112-bitars körnings-ID:t skyddar även mot identitetskrock efter omstart. En ny fysisk körning kräver
+   en ny katalog; blanda aldrig resultat eller ändrad firmware i en gammal.
+5. Läs/validera eller jämför lokalt utan MIDI/enhetsåtkomst:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py validate --run-dir usb-host-probe/hardware-results/midi-canary-001
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py report --run-dir usb-host-probe/hardware-results/midi-canary-001
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py compare --run-dir usb-host-probe/hardware-results/midi-canary-001 --other usb-host-probe/hardware-results/midi-canary-002
+   ```
+
+Rapporten innehåller events/s, fan-out/s, paket/s före stop-cleanup, retries,
+backpressure, fel, samplade kötoppar och maximal/total uppmätt servicetid. Loggen
+innehåller de senaste 15 tidsstämplade start-/räknar-/fel-/stopphändelserna samt
+antal bortfallna poster. Den fångar inte individuella noter eller SysEx-innehåll.
+Topology/routing/audio-läge måste matcha vid jämförelse; samma externa indata
+måste också säkerställas av ägaren. En rapport betyder inte godkänt hårdvarutest.
+
+Vanlig routing utan performance.py arm fryser ingen skyddad diagnostik och kan
+startas om utan dator. Under ett armerat prestandaprov gäller:
+Ohämtad diagnostik blockerar nästa PLAY i device-läge. Hämtning kvitterar endast
+diagnostiken. För ett armerat ljudprov ska även ordinarie collect.py fetch köras
+för ljudresultatet. Befintliga audio-CRC/ACK-regler ändras inte. Enhetens resultat
+ligger bara i RAM: stäng inte av före hämtning. En fysisk körning kan inte
+återupptas efter strömförlust. Insamlade filer på Mac-disken kan däremot läsas
+utan enhet och redan durabla hämtningar återhämtas utan att provet körs om.
+Långa körningar måste avslutas före 32-bitars räknar-/millisekundwrap.

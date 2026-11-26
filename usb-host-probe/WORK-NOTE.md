@@ -159,3 +159,171 @@ Local evidence:
 Handoff: `Flash USB R5.command` and `manual-flash/usb-host-probe-r5/`.
 R5 is PREPARED_NOT_INSTALLED; hardware verification flags remain false. The
 owner must start installation manually to see the new firmware name on FM-1.
+
+
+## R6: static startup display refresh, 2026-11-26
+
+Batch goal: remove repeated text blanking observed on the R4 idle page. The app
+had reached DEVICE / NOT ARMED; hp_draw cleared all 240x240 pixels on every
+scheduled refresh even when no displayed value changed. Native final-frame
+screenshots had not modeled the panel's visible clear/redraw interval.
+
+The overlay now retains two small text-box lists, not pixel framebuffers.
+Unchanged pages issue zero LCD writes. A changed value or route replaces only
+its own background/text box. A layout change clears once and redraws every
+position, including all twelve physical button slots. All controls, USB roles,
+routing/cleanup and updater paths remain unchanged. Vendor sources and all
+previous sealed releases/manual handoffs remain unchanged.
+
+Local evidence:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r6 --verify-only`:
+  PASS. UI regression checks repeated idle refreshes with zero LCD writes,
+  single-box rate/route/counter changes, stable repeat frames and layout changes
+  matching a fresh full redraw. Existing physical-control checks also pass.
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r6`: PASS; the
+  existing builder repeated its integrated checks while sealing the package.
+  Audio/USB/MIDI sanitizer models, six collector checks, two descriptor checks,
+  target FM-1 cross-build, RAM no-call and MMIO gates passed. Only the two
+  existing MIDI-model unused audio-variable warnings remain.
+- Build1448665588; image39580 B, RAM54032/98304 B,
+  pool30720/344064 B. No full pixel framebuffer was added.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r6`:
+  PASS, installer/collector/descriptor-reader file-only checks.
+- Root R6 launcher shell syntax and `--check`: PASS. Previous 137 immutable
+  package files match their pre-R6 fingerprints. Python syntax, specs governance
+  and source whitespace checks pass. Next unused build/prepare default is R7.
+- Native idle page snapshots remain stable; existing routed UI snapshots retain
+  their layout/content apart from the revision label. This is visual/model
+  evidence, not measurement of the physical LCD timing.
+
+Handoff: `Flash USB R6.command` and `manual-flash/usb-host-probe-r6/`.
+PREPARED_NOT_INSTALLED. No installer, recovery or flash operation was started by
+Codex; no MIDI/device access was made. Panel behavior after installing R6 and
+actual audio/MIDI hardware acceptance remain unverified. Owner video/frame
+analysis stays in ignored .build-env; no hardware result media is committed.
+
+
+## R8: KEEL/DUB menu behavior, 2026-11-26
+
+Local adaptation of DUB R64 ui_navigation.h/ADR-0122 and KEEL ADR-0008/0013.
+No source/runtime/build dependency on M-vave was introduced. USB, MIDI/MON and
+BUS main families own independent selected submenus and submenu-page memories.
+Repeated main/sub buttons cycle only that level; switching restores memory.
+GLO/SEQ are held SHIFT/ALT, PLAY retains transport. MODE/LINK K1 edits are guarded;
+ALL/NONE uses an explicit stopped REC/APPLY action rather than a menu press.
+Unused physical slots stay empty. The R6 stable text-box refresh is retained.
+
+R7 was an internal sealed iteration without a manual handoff; retain it locally.
+R8 shortens footer labels and corrects READY to show PLAY, then updates the
+simulator physical input script. All previous sealed files remain unchanged.
+
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r8`: PASS.
+  Independent main/sub memories, navigation inertness, explicit actions, held
+  modifier inertness, stopped edits, cleanup/transport, protected result and
+  stable rendering tests pass. Existing audio/MIDI sanitizer transport models,
+  six collector checks, two descriptor checks and target ROM/MMIO/RAM gates pass.
+- Build1540874594: image40952 B, RAM54048/98304 B, pool30720/344064 B.
+  Existing two unused-variable MIDI-model warnings remain.
+- Native route/monitor/port pages visually inspected. Physical acceptance pending.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r8`:
+  PASS, file-only installer/collector/descriptor checks. Root R8 shell syntax and
+  --check passed. Specs governance/source whitespace checks pass. Default R9.
+- Package README retains a legacy B1 AUD sentence after its new control section;
+  the new menu instructions and root README define the R8 controls. Use USB/MODE
+  K1 right to return to AUDIO+MIDI. This documentation erratum changes no package.
+
+Handoff: Flash USB R8.command / manual-flash/usb-host-probe-r8.
+PREPARED_NOT_INSTALLED, all hardware flags false. No updater or device access.
+
+
+## R12: MIDI performance and log export, 2026-11-26
+
+Batch goal: observe forwarding performance and collect diagnostics over MIDI,
+without concurrent USB0 host/device roles or a computer requirement for normal
+routing. Only performance.py arm enables a protected frozen diagnostic report.
+The client persists a random 112-bit run nonce before sending it; firmware
+consumes it at physical PLAY and rejects conflicting pending IDs. Unread reports
+block new physical discovery until durable fetch/ACK. Normal unarmed routing
+remains restartable standalone. Existing audio snapshot format/CRC/ACK is intact.
+
+New v2 report: 89 little-endian words plus CRC (360 bytes), commands 9/10/11/12
+in the existing namespace. Forwarding-stop counters exclude cleanup; final state
+and cleanup outcome are included. Last 15 timestamped start/sample/fault/stop/
+cleanup records expose explicit truncation. Queue high-water marks are sampled;
+service duration excludes observer work and may include preemption. No total CPU
+utilization, end-to-end latency, raw MIDI payload logging or delivery guarantee
+is inferred. Reports/comparisons retain topology, route and audio-mode identity;
+owner must control external input workloads independently. Physical stream power
+loss is not resumable. One physical run is one durable directory/work unit.
+
+Evidence:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r12`: PASS.
+  Actual C SysEx diagnostic fixture parsed/CRC-checked by Python. Existing
+  audio/USB/MIDI sanitizer/control tests, six collector and two descriptor tests,
+  target RAM no-call/MMIO gates pass. Eight performance tests pass: throughput,
+  CRC, identity, wrong-run/nonce rejection, interrupted arming/readback, lost ACK,
+  durable result before completion, actual subprocess SIGTERM and SIGKILL and
+  idempotent recovery with no repeated device read/run.
+- R12 build1604105024: image42852 B, RAM55076/98304 B,
+  pool30720/344064 B. One existing MIDI-only unused audio-variable warning and
+  one native-render misleading-indentation warning remain; target build passes.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r12`:
+  PASS, file-only installer/collector/descriptor/performance checks. Root R12
+  shell syntax and --check pass. Specs governance, source whitespace and old
+  package hash checks pass. Defaults advance to unused R13.
+- R9–R11 are internal sealed iterations retained locally without manual handoff;
+  R12 is the owner handoff. No earlier sealed package was changed. Owner media,
+  runtime logs/results and build tools remain ignored. No real evaluation,
+  updater, recovery, flash write or MIDI/device access was started by Codex.
+
+Runbook: manual-flash/usb-host-probe-r12/README.md (MIDI performance section).
+Operator validation: performance.py validate --run-dir RUN_DIR, offline.
+After interruption: repeat arm/fetch with the same package and run directory;
+completed raw/result/checksum files are the source of truth, never a RAM counter.
+R12 is PREPARED_NOT_INSTALLED; all hardware acceptance flags remain false.
+
+
+## PR #1 review fixes / R13, 2026-11-26
+
+Reviewed base9638640 to headad8a3a0 plus one consolidated fix batch. Standing
+policy: fix verified scope-preserving P0–P3 issues; no ignored findings.
+
+Resolved:
+- P1 stop/freeze control window: PLAY and K1/REC could restart or edit a completed
+  MIDI run while USB host ownership still existed but hp_running was zero.
+  Finalize/freeze before controls and gate starts/edits while that transition is
+  pending, including IRQ completion after the main-loop check.
+- P2 failure boundary: hp_fail now captures diagnostic stop before later USB
+  teardown. A regression proves 100 ms forwarding remains 100 ms despite a
+  simulated additional 2000 ms before freeze.
+- P2 same-mode rotation: an already selected AUDIO mode no longer clears HP_ARMED
+  or its run token. Original native reproduction showed state0 instead of1.
+- P2 external display cache: returned updater refusal/failure invalidates cached
+  app text before/after the session through the existing local platform overlay.
+  Regression simulates an external display repaint and verifies full restoration;
+  no updater, installer or device access was started to test this path.
+
+Two independent read-only reviews covered P0–P3; the closing review found no
+remaining verified findings. Highest found/fixed: P1; none unresolved/ignored.
+Hardware behavior remains unverified; passing models do not prove no hardware
+faults. No merge approval is implied.
+
+Verification:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r13 --verify-only`:
+  PASS after the consolidated fixes.
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r13`: PASS, standard
+  immutable package sealing. New completion/mode/cache/failure regressions,
+  existing C sanitizer USB/audio/MIDI models, 8 performance persistence tests,
+  6 collector and2 descriptor tests, target ROM/MMIO/RAM gates all pass.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r13`:
+  PASS; installer/collector/descriptor/performance file-only --check.
+- Root R13 shell syntax/--check, specs governance/source whitespace and redacted
+  secret scans pass. 279 previous package files were hash checked unchanged.
+- Build1115640002: image42952 B, RAM55076/98304 B, pool30720/344064 B.
+  One existing unused audio-global warning remains in the MIDI-only model;
+  the new misleading-indentation warning was removed in the touched block.
+- Unrelated suites skipped. No CI workflows configured; current local tests use
+  the existing pinned offline build image/toolchain. No hardware acceptance run.
+
+Handoff: Flash USB R13.command / manual-flash/usb-host-probe-r13.
+PREPARED_NOT_INSTALLED. Earlier releases remain byte-identical. Default R14.

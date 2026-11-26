@@ -2,6 +2,7 @@
 #pragma once
 static uint32_t hp_frozen[HP_FIELDS],hp_frozen_meta[18],hp_frozen_crc;
 static uint8_t hp_frozen_valid;
+static uint32_t hp_diag_frozen[HP_DIAG_WORDS],hp_diag_crc;
 
 static uint32_t hp_crc_bytes(const uint8_t *p,uint32_t n,uint32_t c)
 {
@@ -14,7 +15,12 @@ static uint32_t hp_crc(void)
 }
 static void hp_freeze(void)
 {
-    uint32_t i;memcpy(hp_frozen,hp_v,sizeof hp_v);
+    uint32_t i;
+    if(!hp_diag_valid){
+        hp_diag_finish(fm1_ms,hp_v[H_STATE],hp_v[H_REASON]);
+        if(hp_diag_valid){memcpy(hp_diag_frozen,hp_diag,sizeof hp_diag);hp_diag_crc=~hp_crc_bytes((const uint8_t *)hp_diag_frozen,sizeof hp_diag_frozen,0xffffffffu);}
+    }
+    memcpy(hp_frozen,hp_v,sizeof hp_v);
     for(i=0;i<3;i++) {
         hp_stream_t *s=&hp_stream[i];uint32_t *m=hp_frozen_meta+6*i;
         m[0]=s->vid;m[1]=s->pid;m[2]=s->path;m[3]=s->maxp;m[4]=s->sync;
@@ -79,6 +85,24 @@ static int hp_sysex(const uint8_t *p,uint32_t n)
     } else if(cmd==8 && n==5){
         ota_wr32(raw,hm_nin);ota_wr32(raw+4,hm_nout);len=8;
         for(uint32_t i=0;i<hm_nin;i++){ota_wr32(raw+len,hm_routes[i]);len+=4;}
+    } else if(cmd==9 && n==5){
+        if(!hp_diag_valid)out[6]=3;
+        else{memcpy(raw,hp_diag_frozen,sizeof hp_diag_frozen);ota_wr32(raw+sizeof hp_diag_frozen,hp_diag_crc);len=sizeof hp_diag_frozen+4;}
+    } else if(cmd==10 && n==13){
+        run=p[5]|(uint32_t)p[6]<<7|(uint32_t)p[7]<<14|(uint32_t)p[8]<<21;
+        uint32_t crc=p[9]|(uint32_t)p[10]<<7|(uint32_t)p[11]<<14|(uint32_t)p[12]<<21;
+        if(!hp_diag_valid||run!=hp_diag_frozen[2]||crc!=(hp_diag_crc&0x0fffffffu))out[6]=2;
+        else hp_diag_valid=0;
+    } else if(cmd==11 && n==5){
+        ota_wr32(raw,HP_BUILD_TAG);ota_wr32(raw+4,hp_diag_valid);ota_wr32(raw+8,hp_diag_frozen[2]);ota_wr32(raw+12,hp_diag_crc);
+        for(uint32_t i=0;i<4;i++)ota_wr32(raw+16+4*i,hp_diag_valid?hp_diag_frozen[25+i]:hp_diag_nonce[i]);len=32;
+    } else if(cmd==12 && n==21){
+        if(hp_diag_valid)out[6]=3;
+        else{
+            uint32_t nonce[4],any=0,existing=0,different=0;
+            for(uint32_t i=0;i<4;i++){uint32_t j=5+4*i;nonce[i]=p[j]|(uint32_t)p[j+1]<<7|(uint32_t)p[j+2]<<14|(uint32_t)p[j+3]<<21;any|=nonce[i];existing|=hp_diag_nonce[i];different|=nonce[i]^hp_diag_nonce[i];}
+            if(!any)out[6]=2;else if(existing&&different)out[6]=3;else memcpy(hp_diag_nonce,nonce,sizeof nonce);
+        }
     } else out[6]=2;
     if(len)count+=ota_pack7(raw,len,out+count);
     out[count++]=0xf7;ota_wire_send(out,count);return 1;
