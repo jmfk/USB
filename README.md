@@ -4,14 +4,14 @@ USB is an independent FM-1 firmware experiment, extracted from M-vave on2026-11-
 Two stereo USB audio sources plus an output device, with per-input USB MIDI1
 routing to any set of output ports. Firmware and hardware support remain experimental.
 
-Latest prepared package: **R6, build1448665588**, not confirmed installed or
+Latest prepared package: **R8, build1540874594**, not confirmed installed or
 hardware-verified. The owner-operated R4 installer reported success before the
-rename; R6 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
+rename; R8 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
 model are still pending. MIDI software capacity is32 inputs and32 outputs;
 this is not a measured throughput claim.
 
-- [R6 controls, formats and test procedure](manual-flash/usb-host-probe-r6/README.md)
-- [R6 owner-operated manual installer](<Flash USB R6.command>)
+- [R8 controls, formats and test procedure](manual-flash/usb-host-probe-r8/README.md)
+- [R8 owner-operated manual installer](<Flash USB R8.command>)
 - [Work and verification notes](usb-host-probe/WORK-NOTE.md)
 - [Requirements and decisions](specs/index.md)
 - [Extraction details](MIGRATION.md)
@@ -23,6 +23,13 @@ paths and package IDs remain stable; existing R1–R4 packages are immutable.
 R6 avoids repeated screen blanking on an unchanged page and updates changed
 text boxes individually. The fix is locally tested; panel confirmation after
 manual installation remains pending.
+
+R8 uses KEEL/DUB-style main menus, contextual submenus and independent remembered
+pages. Top row: USB, MIDI/MON, BUS, empty, empty, SHIFT. Bottom row: up to three
+submenus, ALT, PLAY/STOP, contextual APPLY. Repeat a selected menu to cycle its
+own pages; M/S show the two page indices. USB/MODE K1 selects audio/MIDI mode.
+MIDI/LINK K1 edits a stopped route; MIDI/ACT chooses ALL/NONE with K1 and applies
+with REC. Menu navigation itself changes no route, mode or transport.
 
 ## Layout
 
@@ -60,7 +67,7 @@ python3 usb-host-probe/build.py --verify-only
 
 This runs focused local checks and the firmware cross-build without making a new
 release or accessing devices. To prepare a new version, omit --verify-only and
-choose an unused revision (the default is nowR7), then run prepare_manual.py for
+choose an unused revision (the default is nowR9), then run prepare_manual.py for
 that same revision. Never overwrite or edit an existing released package.
 No firmware is installed by build.py or prepare_manual.py. Only the owner may
 launch the manual installer; Codex may run its file-only --check.

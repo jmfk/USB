@@ -17,7 +17,7 @@ BASE = ROOT/'vendor/dinghy'
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision', default='usb-host-probe-r7')
+    ap.add_argument('--revision', default='usb-host-probe-r9')
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument('--stage-only', action='store_true')
     mode.add_argument('--verify-only', action='store_true', help='Run local checks/build without creating a release')

@@ -201,3 +201,36 @@ PREPARED_NOT_INSTALLED. No installer, recovery or flash operation was started by
 Codex; no MIDI/device access was made. Panel behavior after installing R6 and
 actual audio/MIDI hardware acceptance remain unverified. Owner video/frame
 analysis stays in ignored .build-env; no hardware result media is committed.
+
+
+## R8: KEEL/DUB menu behavior, 2026-11-26
+
+Local adaptation of DUB R64 ui_navigation.h/ADR-0122 and KEEL ADR-0008/0013.
+No source/runtime/build dependency on M-vave was introduced. USB, MIDI/MON and
+BUS main families own independent selected submenus and submenu-page memories.
+Repeated main/sub buttons cycle only that level; switching restores memory.
+GLO/SEQ are held SHIFT/ALT, PLAY retains transport. MODE/LINK K1 edits are guarded;
+ALL/NONE uses an explicit stopped REC/APPLY action rather than a menu press.
+Unused physical slots stay empty. The R6 stable text-box refresh is retained.
+
+R7 was an internal sealed iteration without a manual handoff; retain it locally.
+R8 shortens footer labels and corrects READY to show PLAY, then updates the
+simulator physical input script. All previous sealed files remain unchanged.
+
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r8`: PASS.
+  Independent main/sub memories, navigation inertness, explicit actions, held
+  modifier inertness, stopped edits, cleanup/transport, protected result and
+  stable rendering tests pass. Existing audio/MIDI sanitizer transport models,
+  six collector checks, two descriptor checks and target ROM/MMIO/RAM gates pass.
+- Build1540874594: image40952 B, RAM54048/98304 B, pool30720/344064 B.
+  Existing two unused-variable MIDI-model warnings remain.
+- Native route/monitor/port pages visually inspected. Physical acceptance pending.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r8`:
+  PASS, file-only installer/collector/descriptor checks. Root R8 shell syntax and
+  --check passed. Specs governance/source whitespace checks pass. Default R9.
+- Package README retains a legacy B1 AUD sentence after its new control section;
+  the new menu instructions and root README define the R8 controls. Use USB/MODE
+  K1 right to return to AUDIO+MIDI. This documentation erratum changes no package.
+
+Handoff: Flash USB R8.command / manual-flash/usb-host-probe-r8.
+PREPARED_NOT_INSTALLED, all hardware flags false. No updater or device access.
