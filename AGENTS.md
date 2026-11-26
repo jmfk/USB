@@ -1,8 +1,12 @@
-# FM-1 USB audio mixer and MIDI router
+# USB
 
 This is an independent personal instrument project. Sources and build inputs must
 not depend on ../m-vave. The legacy usb-host-probe-rN identifiers and released
 package contents are intentionally preserved.
+
+The project display name is USB. Its canonical folder is /Users/jmfk/code/USB
+and its public repository is https://github.com/jmfk/USB. Keep legacy technical
+paths and package identifiers independent of the display name.
 
 ## Manual firmware installation only
 - Codex may edit, test, build and prepare versioned firmware packages.

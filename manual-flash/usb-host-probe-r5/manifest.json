@@ -1,0 +1,20 @@
+{
+  "version": "usb-host-probe-r5",
+  "package": "FM1-usb-host-probe-r5.fwsc",
+  "description": "USB: USB0 MIDI1 per-input fan-out router and two-source UAC1 stereo audio experiment",
+  "state": "PREPARED_NOT_INSTALLED",
+  "hardware_verified": false,
+  "sha256": {
+    "FM1-usb-host-probe-r5.fwsc": "f31cc98bb77b5fdcae00826bff61e78a4083ad1ccf77c40d6bebeab89b7f530f",
+    "Installera USB.command": "2572b3de6608f9b14399a425a51123f1d331e512365cf2b2b809f0aa2607199d",
+    "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "README.md": "e1b0a2110b5d85a2f37193a94ea494e047a2a309c110569c433417b1843f2549",
+    "build-log.txt": "08ea88a975b141548f61b80c0b96fd92c5e3c3fc0ba4b849555457c9dc7689c6",
+    "collect.py": "9a2d8797fd1a2e173486df6a1570e905819e8dbc825d647af41fdab15071d9a9",
+    "fm1_install.py": "4ca9924b917f2f9d51ff93efd3d40447fe8b795edf82f1989d3a42c84c786db3",
+    "identity.json": "13baacd5348c418194ca286f94841331fb421bf4a33bd9a0a085ad13c207bd8b",
+    "inspect_usb.py": "e300cde8189686344800e2cf30a4f09c8b5626ce1c0ee0d8178af394039ab09e",
+    "manual_install.py": "7e186cc8f548195e2e77eb42f2b8fe04c75eaf5bc7bc1d24ac789bd959edead1",
+    "staged-source.zip": "5f963cfb1511d89838b28b570d018bfe79df2366c1d75aaee28b1621ee21df77"
+  }
+}

@@ -1,4 +1,4 @@
-# USB host feasibility batch
+# USB work and verification notes
 
 Goal: test three distinct USB0 audio addresses before investing in a mixer.
 Scope: isolated probe firmware, bounded UAC1 discovery, serialized scheduler,
@@ -73,10 +73,10 @@ Local evidence:
   the firmware target build succeeds.
 - `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r3`: PASS.
   Installer/collector/descriptor-reader --check only; no MIDI/device access.
-- `sh -n 'Flash USB Host Probe R3.command'` and launcher `--check`: PASS.
+- `sh -n 'Flash USB R3.command'` and launcher `--check`: PASS.
 - Specs governance validator: PASS. No unrelated regression suite or external CI.
 
-Handoff: manual-flash/usb-host-probe-r3 and root Flash USB Host Probe R3.command.
+Handoff: manual-flash/usb-host-probe-r3 and root Flash USB R3.command.
 State PREPARED_NOT_INSTALLED. Never executed ordinary installer mode, updater,
 flash write or recovery. OrbStack was started for the offline build; no project
 infrastructure definitions or shared services were changed.
@@ -88,8 +88,74 @@ Same outstanding Digitakt II format inspection and exact Behringer model apply.
 
 ## Independent project extraction, 2026-11-26
 
-Canonical location is now /Users/jmfk/code/fm1-usb-router. Sources, packages and
+Canonical location is now /Users/jmfk/code/USB. Sources, packages and
 manual handoffs moved together; independent vendor/compiler/SDK inputs and a new
 Python environment remove the M-vave build dependency. See ../MIGRATION.md for
 exact verification. R3 remains unchanged, not confirmed installed. A verify-only
 R4 staging build passed; no R4 release was sealed and no hardware was accessed.
+
+## R4 manual installation handoff, 2026-11-26
+
+Batch goal: build the extracted standalone project and prepare an owner-operated
+installation package. No firmware behavior changed. R1/R2/R3 remain immutable.
+
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r4`: PASS.
+  Sanitized audio/USB transport, MIDI core and physical UI models passed;
+  six collector checks and two descriptor-parser checks passed. Target build,
+  ROM/MMIO and RAM no-call gates passed. Two existing unused audio-variable
+  warnings remain in the MIDI-only model build.
+- R4 build tag736471641; image39200 B, RAM51712/98304 B,
+  pool30720/344064 B. Same staged firmware source fingerprint as R3;
+  version label is R4. Hardware and MIDI verification flags remain false.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r4`: PASS.
+  Package integrity, installer, collector and descriptor-reader checks were
+  file-only. The owner Python environment was checked through the R4 launcher.
+- Added `Flash USB R4.command`; `sh -n` and `--check`: PASS.
+  Build/prepare defaults advance to unused R5; Python syntax checks: PASS.
+
+Handoff: `manual-flash/usb-host-probe-r4/` and root R4 launcher. State remains
+PREPARED_NOT_INSTALLED. Codex did not launch an installer, open MIDI/device
+access, enter updater mode, write flash or request recovery. Only the owner may
+start the launcher manually and type FLASH in Terminal. Firmware replaces the
+current app. USB audio device-format compatibility and actual bus behavior remain
+unverified; use a powered hub for the host experiment. No unrelated suite or CI.
+
+
+## USB project name and R5 handoff, 2026-11-26
+
+Owner requested the project name USB everywhere. Canonical folder is now
+/Users/jmfk/code/USB and the public repository is https://github.com/jmfk/USB.
+The chat is named USB. Codex's project-label UI is blocked to Computer Use and
+has no connector rename operation; that sidebar label requires a manual change.
+See ADR-0002 for compatibility boundaries. Historical paths and package IDs are
+retained, while all current display names, docs and root launchers use USB.
+
+Before moving the folder, the owner-operated R4 installer changed from running
+to success (exit code 0), and its process exited. This is installer evidence,
+not measured USB audio/MIDI acceptance. Codex did not start that installation.
+The MIDI Python environment was recreated at the canonical USB path with the
+same pinned dependencies. The previous folder and launcher paths are aliases
+for old links; current builds and launchers use the canonical project itself.
+
+Local evidence:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r5`: PASS.
+  Focused sanitized USB/audio transport, MIDI core/physical UI, six collector
+  checks, two descriptor-parser checks, FM-1 cross-build, RAM no-call and MMIO
+  gates passed. Two existing unused audio-variable warnings remain in the
+  MIDI-only model. No unrelated suite or external CI was run.
+- R5 build1809377051; image39176 B, RAM51712/98304 B,
+  pool30720/344064 B. APP_NAME and update-loader SCREEN_NAME are USB.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r5`:
+  PASS; installer, collector and descriptor-reader checks were file-only.
+- R2–R5 root launchers: shell syntax and `--check` passed in the relocated
+  environment. Previous launcher names resolve through compatibility links.
+- R1–R4 package integrity matches the pre-rename inventory (107 immutable
+  files). Runtime install logs/status remain ignored and are not published.
+- Specs governance, Python syntax, source/document whitespace checks and
+  redacted secret scans passed before publication. Generated immutable .dis
+  output is excluded from whitespace checks. Build/prepare defaults advance to
+  unused R6.
+
+Handoff: `Flash USB R5.command` and `manual-flash/usb-host-probe-r5/`.
+R5 is PREPARED_NOT_INSTALLED; hardware verification flags remain false. The
+owner must start installation manually to see the new firmware name on FM-1.

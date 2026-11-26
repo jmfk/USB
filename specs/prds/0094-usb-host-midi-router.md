@@ -24,4 +24,6 @@ related_adrs: [ADR-0108]
 - R3 implementation and manual package prepared: [work note](../../usb-host-probe/WORK-NOTE.md), [manual instructions](../../manual-flash/usb-host-probe-r3/README.md). Nothing installed.
 - Focused ASan/UBSan core/transport/physical-UI tests and FM-1 cross-build passed; source snapshots, memory figures and build log are sealed with build tag736471641. Real FM-1 MIDI+audio acceptance remains outstanding.
 
-- 2026-11-26: canonical project moved to /Users/jmfk/code/fm1-usb-router. See [ADR-0001](../adrs/active/0001-independent-project.md) and [migration evidence](../../MIGRATION.md). Released bytes and hardware status are unchanged.
+- 2026-11-26: canonical project moved to /Users/jmfk/code/USB. See [ADR-0001](../adrs/active/0001-independent-project.md) and [migration evidence](../../MIGRATION.md). Released bytes and hardware status are unchanged.
+
+- 2026-11-26: the project is named USB; canonical folder `/Users/jmfk/code/USB`, repository [jmfk/USB](https://github.com/jmfk/USB). See [ADR-0002](../adrs/active/0002-usb-project-name.md). R5 contains the new display name; previous package bytes remain unchanged.

@@ -5,7 +5,7 @@ static void hp_tick(void);
 static int hp_sysex(const uint8_t *,uint32_t);
 #define FELUCCA_UAC 0
 #define STORE_MAGIC 0x31504855u
-#define APP_NAME "USB HOST PROBE"
+#define APP_NAME "USB"
 #define APP_SYSEX hp_sysex
 #include "run_identity.h"
 #include "platform.c"

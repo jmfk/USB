@@ -1,0 +1,35 @@
+{
+  "revision": "usb-host-probe-r5",
+  "build_tag": 1809377051,
+  "source_sha256": "6bd8e71b4fd1cd70bdc56c59cc8eecc4b521bcd0d539e9b9ddb9dbfd66a4a963",
+  "status": "PREPARED_NOT_INSTALLED",
+  "hardware_verified": false,
+  "device_access": false,
+  "midi": {
+    "protocol": "USB MIDI 1.0 Full Speed bulk",
+    "inputs": 32,
+    "outputs": 32,
+    "persistence": "session",
+    "hardware_verified": false
+  },
+  "formats": [
+    "UAC1 PCM16 stereo 44100/48000"
+  ],
+  "output_sync": [
+    "adaptive",
+    "synchronous"
+  ],
+  "run_ms": [
+    10000,
+    60000,
+    300000
+  ],
+  "memory": {
+    "image_bytes": 39176,
+    "image_capacity": 581564,
+    "ram_bytes": 51712,
+    "ram_capacity": 98304,
+    "pool_bytes": 30720,
+    "pool_capacity": 344064
+  }
+}

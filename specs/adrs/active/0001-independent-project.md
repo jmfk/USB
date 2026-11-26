@@ -11,8 +11,8 @@ superseded_by: []
 # ADR-0001: Independent project ownership and local build inputs
 
 ## Decision
-The personal FM-1 USB audio/MIDI experiment owns its source, tests, specifications,
-releases and handoffs under /Users/jmfk/code/fm1-usb-router. It is independent of
+USB, the personal FM-1 audio/MIDI experiment, owns its source, tests, specifications,
+releases and handoffs under /Users/jmfk/code/USB. It is independent of
 M-vave, DUB, KEEL and their firmware evolution, and belongs to neither the Bad
 Herring nor Staravenir product runtime/control planes. No infrastructure, account,
 secret, domain or customer data is introduced or transferred.
@@ -27,13 +27,16 @@ within this project, without symlinks into M-vave.
 Move immutable packages unchanged. Leave compatibility symlinks at their old
 locations so existing chat links and historical M-vave references still resolve;
 those links point into this project, never the reverse. Keep old spec copies as
-historical references and make the new project canonical. Local Git only; no
-remote repository or publication is part of this request.
+historical references and make the new project canonical. The extraction was
+initially local-only. The later authorized public repository and project rename
+are recorded in [ADR-0002](0002-usb-project-name.md).
 
 Verify the relocated build with --verify-only, without sealing a new firmware
-release just for the folder move. R3 remains the owner-operated test package.
+release just for the original extraction. Later owner-operated package versions
+and installation status are recorded in the work note.
 Hardware acceptance and manual-flash-only restrictions are unchanged.
 
 ## Links
 - [Extraction requirements](../../prds/0001-independent-project.md)
 - [Migration evidence](../../../MIGRATION.md)
+- [USB project name and compatibility](0002-usb-project-name.md)

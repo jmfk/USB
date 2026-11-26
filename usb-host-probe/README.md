@@ -1,4 +1,4 @@
-# USB Host Probe R1 — FM-1
+# USB R1 — FM-1
 
 Separat genomförbarhetsprov, inte färdig mixer. Två USB-ljudkällor med stereo in
 och ett tredje USB-ljudkort med stereo ut delar en strömförsörjd hubb. FM-1 är

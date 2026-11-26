@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parent.parent
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision',default='usb-host-probe-r4')
+    ap.add_argument('--revision',default='usb-host-probe-r6')
     args=ap.parse_args();revision=args.revision
     if not re.fullmatch(r'usb-host-probe-r[1-9][0-9]*',revision):ap.error('Invalid revision')
     release=ROOT/'usb-host-probe/releases'/revision
@@ -38,7 +38,7 @@ def main():
         "        print('Testappen startar som USB-device. Fysisk PLAY upptäcker USB; andra PLAY startar routing/prov.')\n"
         "        print('Läs README.md om UAC1/PCM16, powered hub och hur resultat hämtas utan avstängning.')")
     (target/'manual_install.py').write_text(manual)
-    launcher=target/'Installera USB Host Probe.command'
+    launcher=target/'Installera USB.command'
     launcher.write_text('''#!/bin/sh
 set -eu
 PROBE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -48,7 +48,7 @@ exec "$PROBE_PY" "$PROBE_DIR/manual_install.py" "$@"
 ''')
     launcher.chmod(0o755)
     manifest=dict(version=revision,package=package,
-        description='USB0 MIDI1 per-input fan-out router and two-source UAC1 stereo audio experiment',
+        description='USB: USB0 MIDI1 per-input fan-out router and two-source UAC1 stereo audio experiment',
         state='PREPARED_NOT_INSTALLED',hardware_verified=False,
         sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(target.iterdir()) if p.is_file()})
     (target/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

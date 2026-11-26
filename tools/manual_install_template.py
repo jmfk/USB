@@ -53,7 +53,7 @@ class Tee:
 
 def main():
     manifest = validate()
-    print('FM-1 · manuell firmwareinstallation')
+    print('USB · manuell firmwareinstallation för FM-1')
     print('Version:', manifest['version'])
     print('Innehåll:', manifest['description'])
     print('Paket och updater: filkontroll GODKÄND')

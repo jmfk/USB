@@ -26,4 +26,6 @@ related_adrs: [ADR-0106]
 - R2 build1722852506 prepared at `manual-flash/usb-host-probe-r2/`. Focused sanitizer/USB-model/collector/descriptor checks, cross-build and file-only handoff checks passed; native screen inspected. No flashing or measured hardware result.
 - Owner's candidate setup is a second FM-1 plus Digitakt II as sources and a Behringer mixer as output. Exact Behringer model and Digitakt II descriptor inspection remain pending before recommending this package for that setup. See `usb-host-probe/WORK-NOTE.md`.
 
-- 2026-11-26: canonical project moved to /Users/jmfk/code/fm1-usb-router. See [ADR-0001](../adrs/active/0001-independent-project.md) and [migration evidence](../../MIGRATION.md). Released bytes and hardware status are unchanged.
+- 2026-11-26: canonical project moved to /Users/jmfk/code/USB. See [ADR-0001](../adrs/active/0001-independent-project.md) and [migration evidence](../../MIGRATION.md). Released bytes and hardware status are unchanged.
+
+- 2026-11-26: the project is named USB; canonical folder `/Users/jmfk/code/USB`, repository [jmfk/USB](https://github.com/jmfk/USB). See [ADR-0002](../adrs/active/0002-usb-project-name.md). R5 contains the new display name; previous package bytes remain unchanged.

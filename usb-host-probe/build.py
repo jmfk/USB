@@ -17,7 +17,7 @@ BASE = ROOT/'vendor/dinghy'
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision', default='usb-host-probe-r4')
+    ap.add_argument('--revision', default='usb-host-probe-r6')
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument('--stage-only', action='store_true')
     mode.add_argument('--verify-only', action='store_true', help='Run local checks/build without creating a release')
@@ -54,7 +54,7 @@ def main():
     assert s.count(anchor) == 1
     ota.write_text(s.replace(anchor, '#ifdef APP_SYSEX\n    if (APP_SYSEX(p,n)) {ota_frame_done();return 0;}\n#endif\n'+anchor))
     tool = stage/'tools/build.py'
-    s = tool.read_text().replace('SCREEN_NAME = "DINGHY"', 'SCREEN_NAME = "USB HOST PROBE"')
+    s = tool.read_text().replace('SCREEN_NAME = "DINGHY"', 'SCREEN_NAME = "USB"')
     tool.write_text(s)
     h = hashlib.sha256()
     for folder in ('firmware', 'tools'):
@@ -112,7 +112,7 @@ sh tests/run_host.sh tests/probe-screen.txt
         shutil.copy2(stage/f'build/dinghy.{suffix}', release/f'FM1-{args.revision}.{suffix}')
     for name in ('README.md', 'collect.py', 'inspect_usb.py'):
         if name=='README.md':
-            (release/name).write_text((HERE/name).read_text().replace('usb-host-probe-r1',args.revision).replace('Probe R1','Probe '+label))
+            (release/name).write_text((HERE/name).read_text().replace('usb-host-probe-r1',args.revision).replace('USB R1','USB '+label))
         else:
             shutil.copy2(HERE/name, release/name)
     shutil.copy2(BASE/'LICENSE', release/'LICENSE')

@@ -1,6 +1,6 @@
 # Project extraction — 2026-11-26
 
-Destination: `/Users/jmfk/code/fm1-usb-router`. Personal instrument experiment,
+Destination: `/Users/jmfk/code/USB`. Personal instrument experiment,
 separate from the ongoing M-vave/DUB/KEEL work and from business portfolios.
 
 Moved: USB overlay, focused tests, collector/descriptor reader, R1/R2/R3 releases,
@@ -42,3 +42,20 @@ was created, and project sidebar membership is not claimed complete.
 - Local Git initialized. No remote/push, new release, updater or flash operation.
 - Codex sidebar project/chat membership remains a manual user action as explained
   above; the on-disk extraction and independent build are complete.
+
+
+## USB name — 2026-11-26
+
+The project's current name is USB. Canonical folder: `/Users/jmfk/code/USB`.
+Public repository: [jmfk/USB](https://github.com/jmfk/USB). The former
+`/Users/jmfk/code/fm1-usb-router` path is a compatibility symlink, preserving the
+historical M-vave links and existing manual-install links. Current build inputs
+and the recreated MIDI environment are independent of that alias.
+
+Documentation, current root launchers, firmware APP_NAME and the next loader
+screen use USB. R1–R4 package bytes and legacy technical IDs remain unchanged;
+the new display name is delivered in R5. See [ADR-0002](specs/adrs/active/0002-usb-project-name.md)
+and the [work note](usb-host-probe/WORK-NOTE.md) for verification and installation
+status. The Codex chat is renamed; the sidebar project label needs a manual
+change because the connector has no rename operation and Codex UI control is
+blocked.
