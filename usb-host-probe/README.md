@@ -186,3 +186,56 @@ avbrott/återupptagning, idempotens och att ingen analog verifiering hittas på.
 Bygget körs i befintlig OrbStack-image, utan nätverk eller USB-enheter. Lokal
 verifiering och paketets minnesuppgifter dokumenteras i identity.json och
 build-log.txt. Nästa ändring efter överlämning ska bli en ny versionskatalog.
+
+
+## MIDI-prestanda och diagnostikloggar (R12 och senare)
+
+MIDI/MON-knappen växlar till MON; välj PERF för maximal servicetid och samplade
+kötoppar. Detta är inte end-to-end-latens eller total CPU-belastning. Kör samma
+externa MIDI-sekvens, tempo, routning och hubbportar när prestanda jämförs.
+
+1. Installera manuellt. Med FM-1 ansluten till datorn, spara ett nytt körnings-ID:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py arm --run-dir usb-host-probe/hardware-results/midi-canary-001
+   ```
+
+   Kommandot startar ingen trafik eller host. Välj USB/MODE MIDI ONLY med K1 vänster och sätt önskade
+   rutter i MIDI/LINK. PLAY upptäcker; nästa PLAY börjar vidarebefordra.
+2. Kör först en kort, cirka tio sekunders kontroll med låg trafik. Stoppa med
+   fysisk PLAY, låt cleanup avslutas. Ingen benchmark startas från datorn.
+3. Behåll FM-1 påslagen och flytta USB från den strömförsörjda hubben till datorn.
+   USB0 kan inte vara host och datoransluten MIDI-device samtidigt.
+4. Från projektroten, hämta via MIDI till en ny beständig lokal körningskatalog:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py fetch --run-dir usb-host-probe/hardware-results/midi-canary-001
+   ```
+
+   Vid avbrott: kör exakt samma kommando/katalog igen. Manifest, rådata, rapport
+   och COMPLETE skrivs atomiskt med fsync före ACK. Det slumpade 112-bitars körnings-ID:t skyddar även mot identitetskrock efter omstart. En ny fysisk körning kräver
+   en ny katalog; blanda aldrig resultat eller ändrad firmware i en gammal.
+5. Läs/validera eller jämför lokalt utan MIDI/enhetsåtkomst:
+
+   ```sh
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py validate --run-dir usb-host-probe/hardware-results/midi-canary-001
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py report --run-dir usb-host-probe/hardware-results/midi-canary-001
+   .build-env/midi-venv/bin/python manual-flash/usb-host-probe-r1/performance.py compare --run-dir usb-host-probe/hardware-results/midi-canary-001 --other usb-host-probe/hardware-results/midi-canary-002
+   ```
+
+Rapporten innehåller events/s, fan-out/s, paket/s före stop-cleanup, retries,
+backpressure, fel, samplade kötoppar och maximal/total uppmätt servicetid. Loggen
+innehåller de senaste 15 tidsstämplade start-/räknar-/fel-/stopphändelserna samt
+antal bortfallna poster. Den fångar inte individuella noter eller SysEx-innehåll.
+Topology/routing/audio-läge måste matcha vid jämförelse; samma externa indata
+måste också säkerställas av ägaren. En rapport betyder inte godkänt hårdvarutest.
+
+Vanlig routing utan performance.py arm fryser ingen skyddad diagnostik och kan
+startas om utan dator. Under ett armerat prestandaprov gäller:
+Ohämtad diagnostik blockerar nästa PLAY i device-läge. Hämtning kvitterar endast
+diagnostiken. För ett armerat ljudprov ska även ordinarie collect.py fetch köras
+för ljudresultatet. Befintliga audio-CRC/ACK-regler ändras inte. Enhetens resultat
+ligger bara i RAM: stäng inte av före hämtning. En fysisk körning kan inte
+återupptas efter strömförlust. Insamlade filer på Mac-disken kan däremot läsas
+utan enhet och redan durabla hämtningar återhämtas utan att provet körs om.
+Långa körningar måste avslutas före 32-bitars räknar-/millisekundwrap.

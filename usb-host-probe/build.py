@@ -17,7 +17,7 @@ BASE = ROOT/'vendor/dinghy'
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision', default='usb-host-probe-r9')
+    ap.add_argument('--revision', default='usb-host-probe-r13')
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument('--stage-only', action='store_true')
     mode.add_argument('--verify-only', action='store_true', help='Run local checks/build without creating a release')
@@ -103,6 +103,7 @@ sh tests/run_host.sh tests/probe-screen.txt
     assert 'mido' not in sys.modules
     subprocess.run([sys.executable, str(HERE/'tests/test_collect.py'), str(stage/'build/probe-wire-fixture.bin')], check=True)
     subprocess.run([sys.executable,str(HERE/'tests/test_inspect_usb.py')],check=True)
+    subprocess.run([sys.executable,str(HERE/'tests/test_performance.py'),str(stage/'build/probe-wire-fixture.bin.performance')],check=True)
     (stage/'identity.json').write_text(json.dumps(identity, indent=2)+'\n')
     if args.verify_only:
         print('VERIFIED_NOT_PACKAGED:', stage)
@@ -110,7 +111,7 @@ sh tests/run_host.sh tests/probe-screen.txt
     release.mkdir(parents=True)
     for suffix in ('fwsc', 'bin', 'elf', 'dis'):
         shutil.copy2(stage/f'build/dinghy.{suffix}', release/f'FM1-{args.revision}.{suffix}')
-    for name in ('README.md', 'collect.py', 'inspect_usb.py'):
+    for name in ('README.md', 'collect.py', 'inspect_usb.py', 'performance.py'):
         if name=='README.md':
             (release/name).write_text((HERE/name).read_text().replace('usb-host-probe-r1',args.revision).replace('USB R1','USB '+label))
         else:

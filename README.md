@@ -4,14 +4,14 @@ USB is an independent FM-1 firmware experiment, extracted from M-vave on2026-11-
 Two stereo USB audio sources plus an output device, with per-input USB MIDI1
 routing to any set of output ports. Firmware and hardware support remain experimental.
 
-Latest prepared package: **R8, build1540874594**, not confirmed installed or
+Latest prepared package: **R12, build1604105024**, not confirmed installed or
 hardware-verified. The owner-operated R4 installer reported success before the
-rename; R8 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
+rename; R12 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
 model are still pending. MIDI software capacity is32 inputs and32 outputs;
 this is not a measured throughput claim.
 
-- [R8 controls, formats and test procedure](manual-flash/usb-host-probe-r8/README.md)
-- [R8 owner-operated manual installer](<Flash USB R8.command>)
+- [R12 controls, formats and test procedure](manual-flash/usb-host-probe-r12/README.md)
+- [R12 owner-operated manual installer](<Flash USB R12.command>)
 - [Work and verification notes](usb-host-probe/WORK-NOTE.md)
 - [Requirements and decisions](specs/index.md)
 - [Extraction details](MIGRATION.md)
@@ -30,6 +30,24 @@ submenus, ALT, PLAY/STOP, contextual APPLY. Repeat a selected menu to cycle its
 own pages; M/S show the two page indices. USB/MODE K1 selects audio/MIDI mode.
 MIDI/LINK K1 edits a stopped route; MIDI/ACT chooses ALL/NONE with K1 and applies
 with REC. Menu navigation itself changes no route, mode or transport.
+
+## MIDI performance and logs
+
+R12 adds MIDI/MON → PERF and frozen SysEx diagnostic reports. Use the packaged
+`performance.py arm --run-dir ...` before a physical run, STOP on FM-1, then
+reconnect USB0 to the Mac and use `performance.py fetch --run-dir ...` with the
+same directory. `report`, `validate` and `compare` work offline. See the
+[R12 runbook](manual-flash/usb-host-probe-r12/README.md#midi-prestanda-och-diagnostikloggar-r12-och-senare).
+
+Reports contain routing events/fan-out per second, ACKed packet counters before
+cleanup, retries, backpressure, errors, sampled queue peaks, service durations
+and the last 15 timestamped diagnostics with explicit dropped count. They do
+not measure end-to-end latency, total CPU utilization or capture MIDI payloads.
+A durable 112-bit client run ID prevents confusing separate boots/runs; raw
+CRC-checked reports and completion checksums are fsynced before device ACK.
+Interrupted downloads resume without restarting a physical run. Ordinary routing
+without diagnostic arming remains independent of a computer. No real benchmark
+or device access has been performed by Codex.
 
 ## Layout
 
@@ -67,7 +85,7 @@ python3 usb-host-probe/build.py --verify-only
 
 This runs focused local checks and the firmware cross-build without making a new
 release or accessing devices. To prepare a new version, omit --verify-only and
-choose an unused revision (the default is nowR9), then run prepare_manual.py for
+choose an unused revision (the default is nowR13), then run prepare_manual.py for
 that same revision. Never overwrite or edit an existing released package.
 No firmware is installed by build.py or prepare_manual.py. Only the owner may
 launch the manual installer; Codex may run its file-only --check.

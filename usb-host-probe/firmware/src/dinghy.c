@@ -25,8 +25,8 @@ static void hp_host_start(void)
     hm_inputs[0]=(hm_port_t){.pipe=0};hm_outputs[0]=(hm_port_t){.pipe=1};
     hm_npipe=2;hm_nin=hm_nout=1;hm_discovery_end();hp_owns_usb=1;hp_v[H_STATE]=HP_READY;
 }
-static void hp_run_begin(void){hp_running=hm_forward=1;hp_v[H_STATE]=HP_RUNNING;}
-static void hp_request_stop(uint32_t state,uint32_t reason){hp_running=hm_forward=0;hp_v[H_STATE]=state;hp_v[H_REASON]=reason;}
+static void hp_run_begin(void){hp_diag_begin(fm1_ms,HP_BUILD_TAG);hp_running=hm_forward=1;hp_v[H_STATE]=HP_RUNNING;}
+static void hp_request_stop(uint32_t state,uint32_t reason){hp_diag_stop(fm1_ms,state,reason);hp_running=hm_forward=0;hp_v[H_STATE]=state;hp_v[H_REASON]=reason;}
 static void hp_host_stop(void){hp_owns_usb=0;}
 #endif
 #include "probe_wire.h"
@@ -118,7 +118,7 @@ static uint32_t hp_draw(void)
     const char *name=hp_sub_name(sub);while(*name&&n<24)title[n++]=*name++;
     title[n++]=' ';title[n++]='M';title[n++]=(char)('1'+hp_main_page[hp_menu]);title[n++]='/';title[n++]=(char)('0'+hp_main_count(hp_menu));
     title[n++]=' ';title[n++]='S';title[n++]=(char)('1'+page);title[n++]='/';title[n++]=(char)('0'+hp_page_count());title[n]=0;
-    hp_text(4,title);hp_text(30,hp_states[state]);
+    hp_text(4,title);hp_text(30,hp_diag_valid?"LOG READY / FETCH MIDI":hp_states[state]);
     if(hp_link_view()){
         if(hm_nin){
             hp_input%=hm_nin;hp_port_heading(56,"IN",hp_input,&hm_inputs[hp_input]);
@@ -134,19 +134,20 @@ static uint32_t hp_draw(void)
         }else{hp_text(65,hp_action_all?"ALL OUTPUTS":"NO OUTPUTS");hp_text(95,"K1 LEFT NONE / RIGHT ALL");hp_text(130,editable?"REC: APPLY TO INPUT":"STOP TO EDIT ROUTES");}
     }else if(hp_menu==1){
         if(!sub){hp_number(62,"MIDI RX",hm_rx_packets);hp_number(88,"MIDI TX",hm_tx_packets);}
-        else{hp_number(62,"FAULT",hm_fault);hp_text(100,hp_reasons[hp_v[H_REASON]<=HP_NO_MIDI?hp_v[H_REASON]:HP_IO]);}
+        else if(sub==1){hp_number(62,"FAULT",hm_fault);hp_text(100,hp_reasons[hp_v[H_REASON]<=HP_NO_MIDI?hp_v[H_REASON]:HP_IO]);}
+        else{hp_number(62,"SERVICE MAX US",hp_diag[19]);hp_number(90,"IN QUEUE MAX",hp_diag[17]);hp_number(118,"OUT QUEUE MAX",hp_diag[18]);hp_number(146,"LOG DROPPED",hp_diag[23]);}
     }else if(hp_menu==0){
         if(!sub){hp_text(62,hp_audio_enabled?"MODE AUDIO + MIDI":"MODE MIDI ONLY");hp_text(95,"K1 RIGHT AUDIO / LEFT MIDI");hp_text(130,"POWERED HUB REQUIRED");}
         else if(sub==1){hp_text(62,"UAC1 PCM16 STEREO");hp_number(90,"RATE",hp_v[H_RATE]);hp_text(122,"44100 / 48000 HZ");}
         else if(!page){hp_number(62,"AUDIO IN A",hp_v[H_A_PACKETS]);hp_number(88,"AUDIO IN B",hp_v[H_B_PACKETS]);hp_number(114,"OUTPUT",hp_v[H_OUT_PACKETS]);}
         else{hp_number(62,"IO ERRORS",hp_v[H_IO_ERRORS]);hp_text(100,hp_reasons[hp_v[H_REASON]<=HP_NO_MIDI?hp_v[H_REASON]:HP_IO]);}
     }else if(!sub){hp_text(62,hp_owns_usb?"USB0 HOST":"USB0 DEVICE");hp_number(90,"MIDI INPUTS",hm_nin);hp_number(116,"MIDI OUTPUTS",hm_nout);}
-    else{hp_text(62,"USB " HP_LABEL);hp_number(90,"BUILD",HP_BUILD_TAG);hp_text(125,"HARDWARE UNVERIFIED");}
+    else{hp_text(62,hp_diag_valid?"FETCH MIDI LOG FIRST":"USB " HP_LABEL);hp_number(90,"BUILD",HP_BUILD_TAG);hp_text(125,"HARDWARE UNVERIFIED");}
     for(uint32_t i=0;i<12;i++){
         const char *label="";char selected[12];uint32_t active=0;
         if(i<3){label=hp_main_name(i);active=i==hp_menu;}
         if(i==5){label="SHIFT";active=!!(fm1_in.buttons&(1u<<BTN_GLO));}
-        if(i>=6&&i<9&&i-6<hp_sub_count()){static const char *const setup[]={"MODE","FMT","RES"},*const route[]={"LINK","PORT","ACT"},*const mon[]={"TRAF","ERR"},*const bus[]={"STATE","BUILD"};label=hp_menu==0?setup[i-6]:hp_menu==2?bus[i-6]:hp_main_page[1]?mon[i-6]:route[i-6];active=i-6==sub;}
+        if(i>=6&&i<9&&i-6<hp_sub_count()){static const char *const setup[]={"MODE","FMT","RES"},*const route[]={"LINK","PORT","ACT"},*const mon[]={"TRAF","ERR","PERF"},*const bus[]={"STATE","BUILD"};label=hp_menu==0?setup[i-6]:hp_menu==2?bus[i-6]:hp_main_page[1]?mon[i-6]:route[i-6];active=i-6==sub;}
         if(i==9){label="ALT";active=!!(fm1_in.buttons&(1u<<BTN_SEQ));}
         if(i==10)label=hp_running?"STOP":"PLAY";
         if(i==11&&hp_menu==1&&!hp_main_page[1]&&sub==2&&editable)label="APPLY";
@@ -174,6 +175,7 @@ static void hp_controls(uint32_t pressed)
         if(k)hp_action_all=k>0;
         if((pressed&(1u<<BTN_REC))&&editable&&hm_nin&&hm_nout)hm_route_set(hp_input,hp_action_all?hm_all():0);
     }
+    if((pressed&(1u<<BTN_PLAY))&&hp_diag_valid&&!hp_owns_usb){return;}
     if(pressed&(1u<<BTN_PLAY)){
         if(hp_v[H_STATE]==HP_READY){fm1_irq_off();hp_run_begin();fm1_irq_on();}
         else if(hp_owns_usb && hp_running){fm1_irq_off();hp_request_stop(HP_STOPPED,HP_INCOMPLETE);fm1_irq_on();}

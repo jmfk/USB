@@ -234,3 +234,50 @@ simulator physical input script. All previous sealed files remain unchanged.
 
 Handoff: Flash USB R8.command / manual-flash/usb-host-probe-r8.
 PREPARED_NOT_INSTALLED, all hardware flags false. No updater or device access.
+
+
+## R12: MIDI performance and log export, 2026-11-26
+
+Batch goal: observe forwarding performance and collect diagnostics over MIDI,
+without concurrent USB0 host/device roles or a computer requirement for normal
+routing. Only performance.py arm enables a protected frozen diagnostic report.
+The client persists a random 112-bit run nonce before sending it; firmware
+consumes it at physical PLAY and rejects conflicting pending IDs. Unread reports
+block new physical discovery until durable fetch/ACK. Normal unarmed routing
+remains restartable standalone. Existing audio snapshot format/CRC/ACK is intact.
+
+New v2 report: 89 little-endian words plus CRC (360 bytes), commands 9/10/11/12
+in the existing namespace. Forwarding-stop counters exclude cleanup; final state
+and cleanup outcome are included. Last 15 timestamped start/sample/fault/stop/
+cleanup records expose explicit truncation. Queue high-water marks are sampled;
+service duration excludes observer work and may include preemption. No total CPU
+utilization, end-to-end latency, raw MIDI payload logging or delivery guarantee
+is inferred. Reports/comparisons retain topology, route and audio-mode identity;
+owner must control external input workloads independently. Physical stream power
+loss is not resumable. One physical run is one durable directory/work unit.
+
+Evidence:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r12`: PASS.
+  Actual C SysEx diagnostic fixture parsed/CRC-checked by Python. Existing
+  audio/USB/MIDI sanitizer/control tests, six collector and two descriptor tests,
+  target RAM no-call/MMIO gates pass. Eight performance tests pass: throughput,
+  CRC, identity, wrong-run/nonce rejection, interrupted arming/readback, lost ACK,
+  durable result before completion, actual subprocess SIGTERM and SIGKILL and
+  idempotent recovery with no repeated device read/run.
+- R12 build1604105024: image42852 B, RAM55076/98304 B,
+  pool30720/344064 B. One existing MIDI-only unused audio-variable warning and
+  one native-render misleading-indentation warning remain; target build passes.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r12`:
+  PASS, file-only installer/collector/descriptor/performance checks. Root R12
+  shell syntax and --check pass. Specs governance, source whitespace and old
+  package hash checks pass. Defaults advance to unused R13.
+- R9–R11 are internal sealed iterations retained locally without manual handoff;
+  R12 is the owner handoff. No earlier sealed package was changed. Owner media,
+  runtime logs/results and build tools remain ignored. No real evaluation,
+  updater, recovery, flash write or MIDI/device access was started by Codex.
+
+Runbook: manual-flash/usb-host-probe-r12/README.md (MIDI performance section).
+Operator validation: performance.py validate --run-dir RUN_DIR, offline.
+After interruption: repeat arm/fetch with the same package and run directory;
+completed raw/result/checksum files are the source of truth, never a RAM counter.
+R12 is PREPARED_NOT_INSTALLED; all hardware acceptance flags remain false.
