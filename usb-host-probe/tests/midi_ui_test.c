@@ -24,7 +24,7 @@ int main(void)
  hp_controls(1u<<BTN_SEL);assert(hp_selected_page()==1);
  hp_controls(1u<<BTN_HOME);assert(hp_link_view());
  hp_controls(1u<<BTN_PLAY);assert(hp_owns_usb&&hp_v[H_STATE]==HP_READY&&!hm_forward);
- assert(hp_draw()>0);assert(hp_draw()==0);knob(1);assert(hm_routes[0]==1);assert(hp_draw()==1);
+ assert(hp_draw()>0);assert(hp_draw()==0);knob(1);assert(hm_routes[0]==1);assert(hp_draw()>0);
  /* Submenu selection is never ALL/NONE. REC is the explicit action. */
  hp_controls(1u<<BTN_ARP);assert(hm_routes[0]==1);knob(-1);assert(hm_routes[0]==1);
  hp_controls(1u<<BTN_REC);assert(!hm_routes[0]);knob(1);hp_controls(1u<<BTN_REC);assert(hm_routes[0]==1);
@@ -47,6 +47,25 @@ int main(void)
  assert(hp_owns_usb&&hp_v[H_STATE]==HP_STOPPED&&hm_routes[0]==1&&!hp_diag_valid);
  assert(hp_finish_if_stopped());assert(!hp_owns_usb&&hp_diag_valid&&hp_diag_frozen[25]==55);
  assert(hp_frozen[H_STATE]==HP_STOPPED);hp_controls(1u<<BTN_PLAY);assert(!hp_owns_usb&&hp_diag_valid);
+ /* Real footer glyph widths must fit, including held unused modifiers. */
+ for(uint32_t menu=0;menu<4;menu++){
+  hp_menu=menu;fm1_in.buttons=(1u<<BTN_GLO)|(1u<<BTN_SEQ);hp_draw();
+  hp_ui_box_t *boxes=hp_ui_frames[hp_ui_frame^1];
+  for(uint32_t j=0;j<hp_ui_count[hp_ui_frame^1];j++)if(boxes[j].y>=204){
+   assert(text_w(&FONT_S,boxes[j].text)<=(int32_t)boxes[j].w-4);
+   if(boxes[j].x==202&&boxes[j].y==204)assert(!boxes[j].text[0]);
+   if(boxes[j].x==122&&boxes[j].y==222)assert(!boxes[j].text[0]);
+  }
+ }
+ assert(hp_edit(120,0x7fffffff,30,300)==300);assert(hp_edit(120,(-2147483647-1),30,300)==30);
+ hp_diag_valid=hp_frozen_valid=0;hp_v[H_STATE]=HP_IDLE;hp_audio_enabled=1;hp_menu=3;hp_sub[3][0]=0;hp_sub_page[3][0][0]=0;
+ host_enc[ENC_KNOB2]=1;hp_controls(0);assert(hm_sync_config.enabled&&!hp_audio_enabled&&!hp_running);
+ hp_controls(1u<<BTN_PLAY);assert(hp_v[H_STATE]==HP_READY&&!hm_sync_active);
+ hp_controls(1u<<BTN_PLAY);assert(hp_running&&hm_sync_active&&((hm_word(&hm_outq[hm_outputs[hm_sync_config.output].pipe])>>8)&255)==0xfa);
+ uint32_t tempo=hm_sync_config.bpm;knob(20);assert(hm_sync_config.bpm==tempo);
+ hp_controls(1u<<BTN_REC);assert(hm_sync_cc_on);
+ hp_controls(1u<<BTN_PLAY);assert(!hp_running&&!hm_sync_active&&!hm_sync_cc_on);
+ puts("PASS: graphic footer fit, inactive modifiers, sync enable/start/REC/stop and locked configuration");
  puts("PASS: review regressions: completion/freeze action gates, unchanged armed mode and external-screen restoration");
  puts("PASS: independent main/sub pages, remembered selection, inert navigation/modifiers, explicit actions, stopped edits, transport, evidence protection and stable redraw");return 0;
 }

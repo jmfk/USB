@@ -327,3 +327,33 @@ Verification:
 
 Handoff: Flash USB R13.command / manual-flash/usb-host-probe-r13.
 PREPARED_NOT_INSTALLED. Earlier releases remain byte-identical. Default R14.
+
+## R14 — graphical connections and MIDI sync (2026-11-26)
+
+Local batch `codex/graphic-ui-midi-sync`: colored cached graphics, explicit IN/OUT
+and cables, page identity, compact ST/VER, blank unused SHIFT/ALT, fourth SYNC menu.
+Owner approved PLAY Start/Stop and REC configurable CC. CLK30–300 BPM/enable,
+CTRL CC/channel/on/off, OUT selected stopped-only;24 PPQN uses existing ACK queues.
+STOP sends CC-off after SysEx/cleanup. Output-only discovery works when enabled.
+No host/device role bypass, installer or device access.
+
+Verification: `build.py --revision usb-host-probe-r14 --verify-only` and sealed
+`build.py --revision usb-host-probe-r14` PASS. C sanitizers cover tick wrap, tempo
+range, backpressure, SysEx, no catch-up burst, stopped edits and real USB ACK
+Start/50 clocks/CC/Stop/CC-off. Existing6 collector,2 descriptor and8 diagnostic
+tests pass. Native screenshots visually checked. Image72392 B; RAM57156/98304 B;
+pool30720/344064 B. Existing model-only unused-global warning remains.
+`prepare_manual.py --revision usb-host-probe-r14` and file-only checks PASS.
+Unrelated broad suites skipped; no CI workflow configured. Owner requested push/PR.
+
+Build118966248, PREPARED_NOT_INSTALLED, hardware flags false. Clock precision,
+jitter, actual panel and compatibility require owner hardware acceptance.
+Earlier packages untouched; next default R15.
+
+Final pre-PR verification (2026-11-26):
+- R14 is sealed; the builder correctly refused to reuse its revision.
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r15 --verify-only`:
+  PASS on current source, without sealing another package or device access.
+- R14 root launcher syntax/file-only --check, specs governance and diff whitespace:
+  PASS. Previous219 release files hash checked unchanged.
+- One coherent graphic UI/sync PR; physical acceptance remains pending.

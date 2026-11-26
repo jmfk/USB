@@ -17,7 +17,7 @@ BASE = ROOT/'vendor/dinghy'
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision', default='usb-host-probe-r14')
+    ap.add_argument('--revision', default='usb-host-probe-r15')
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument('--stage-only', action='store_true')
     mode.add_argument('--verify-only', action='store_true', help='Run local checks/build without creating a release')
@@ -81,6 +81,8 @@ cc -O1 -g -Wall -Wextra -Wno-unused-function -Wno-misleading-indentation -fsanit
 ASAN_OPTIONS=detect_leaks=0 build/probe-test build/probe-wire-fixture.bin
 cc -O1 -g -Wall -Wextra -Wno-unused-function -Wno-misleading-indentation -fsanitize=address,undefined -Ifirmware/src tests/midi_core_test.c -o build/midi-core-test
 ASAN_OPTIONS=detect_leaks=0 build/midi-core-test
+cc -O1 -g -Wall -Wextra -Wno-unused-function -Wno-misleading-indentation -fsanitize=address,undefined -Ifirmware/src tests/midi_sync_test.c -o build/midi-sync-test
+ASAN_OPTIONS=detect_leaks=0 build/midi-sync-test
 cc -O1 -g -Wall -Wno-unused-function -Wno-misleading-indentation -fsanitize=address,undefined -DDINGHY_HOST -Ifirmware/hal -Ifirmware/src -Ifirmware/gen tests/midi_ui_test.c -o build/midi-ui-test
 ASAN_OPTIONS=detect_leaks=0 build/midi-ui-test
 sh build.sh --board fm1

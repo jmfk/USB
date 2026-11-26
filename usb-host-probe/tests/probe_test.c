@@ -17,6 +17,7 @@ static uint32_t fm1_ms,fake_us,fake_addr,fake_index,fake_csr[5][32],fake_port;
 static uint32_t fake_pending,fake_done_at,fake_delay=120,fake_active_addr,fake_error,fake_bad_len;
 static uint32_t fake_rx_count,fake_output_nonzero,fake_switches,fake_stall,fake_rate=48000;
 static int32_t fake_frozen_frame=-1;
+static uint32_t fake_output_only;
 static uint32_t fake_midi_enabled,fake_midi_delay=20,fake_blocked_device,fake_late_ack;
 static uint32_t fake_midi_data[4][64],fake_midi_w[4],fake_midi_r[4];
 static uint32_t fake_midi_sent[4][2048],fake_midi_count[4],fake_midi_tx_len;
@@ -49,6 +50,10 @@ static uint32_t fake_config(uint8_t *p,int sink)
         const uint8_t midi[]={9,4,2,0,2,1,3,0,0,7,0x24,1,0,1,37,0,
             9,5,0x82,2,64,0,0,0,0,6,0x25,1,2,1,2,
             9,5,2,2,64,0,0,0,0,6,0x25,1,2,3,4};
+        if(fake_output_only){
+            memcpy(p+sizeof d,midi,16);p[sizeof d+4]=1;
+            memcpy(p+sizeof d+16,midi+31,15);p[2]=sizeof d+31;p[4]=2;return sizeof d+31;
+        }
         memcpy(p+sizeof d,midi,sizeof midi);p[2]=sizeof d+sizeof midi;p[4]=2;
         return sizeof d+sizeof midi;
     }
@@ -238,6 +243,7 @@ static void reset_case(uint32_t rate,uint32_t delay)
     fake_us=fm1_ms=fake_addr=fake_index=fake_port=fake_pending=0;
     fake_error=fake_bad_len=fake_output_nonzero=fake_rx_count=fake_switches=0;
     fake_rate=rate;fake_delay=delay;fake_frozen_frame=-1;hp_gain=100;hp_owns_usb=0;usb.timeouts=0;
+    fake_output_only=0;hm_sync_config=(hm_sync_config_t){120,0,0,0,20,127,0};
     fake_midi_enabled=fake_blocked_device=fake_late_ack=0;fake_midi_delay=20;
     memset(fake_midi_w,0,sizeof fake_midi_w);memset(fake_midi_r,0,sizeof fake_midi_r);
     memset(fake_midi_count,0,sizeof fake_midi_count);memset(fake_dev_rx_toggle,0,sizeof fake_dev_rx_toggle);
@@ -296,6 +302,30 @@ static void midi_model(void)
     assert(!fake_midi_count[2]);hp_host_stop();
     puts("PASS: actual MIDI transport: composite discovery, virtual cables, audio coexistence, idle IN, NAK retries, late ACK, stop cleanup");
 }
+static void sync_transport_model(void)
+{
+    reset_case(48000,120);fake_midi_enabled=fake_output_only=1;hp_audio_enabled=0;hp_defer_run=1;
+    hp_host_start();assert(hp_v[H_STATE]==HP_FAILED&&hp_v[H_REASON]==HP_NO_MIDI);hp_host_stop();
+    reset_case(48000,120);fake_midi_enabled=fake_output_only=1;hp_audio_enabled=0;hp_defer_run=1;
+    hm_sync_config=(hm_sync_config_t){120,1,0,2,20,127,0};hp_host_start();
+    assert(hp_v[H_STATE]==HP_READY&&!hm_nin&&hm_nout==6);hp_run_begin();
+    for(uint32_t i=0;i<10500;i++){fake_us+=100;fm1_ms=fake_us/1000;hp_tick();}
+    assert(hp_running&&hm_sync_clocks==50&&!hm_sync_skipped&&!hm_sync_late);
+    assert(hm_sync_cc());for(uint32_t i=0;i<100;i++){fake_us+=100;fm1_ms=fake_us/1000;hp_tick();}
+    hp_request_stop(HP_STOPPED,HP_INCOMPLETE);
+    for(uint32_t i=0;i<20000&&hp_running;i++){fake_us+=100;fm1_ms=fake_us/1000;hp_tick();}
+    assert(!hp_running&&!hm_cleanup_bad&&!hm_fault&&!hm_sync_active&&!hm_sync_cc_on);
+    uint32_t clocks=0,start=0,stop=0,cc_on=0,cc_off=0,stop_index=0;
+    for(uint32_t i=0;i<fake_midi_count[1];i++){
+        uint32_t w=fake_midi_sent[1][i];if(w==0x0000fa0fu)start++;
+        if(w==0x0000f80fu){assert(!stop);clocks++;}
+        if(w==0x0000fc0fu){stop++;stop_index=i;}
+        if(w==0x7f14b20bu)cc_on++;if(w==0x0014b20bu){cc_off++;assert(stop&&i>stop_index);}
+    }
+    assert(start==1&&stop==1&&clocks==50&&cc_on==1&&cc_off==1);
+    assert(fake_midi_sent[1][0]==0x0000fa0fu&&!fake_midi_count[2]&&!fake_midi_count[3]);
+    hp_host_stop();puts("PASS: output-only sync uses actual USB ACK path; Start/50 clocks/REC CC/Stop/CC-off delivered exactly once to selected output");
+}
 int main(int argc,char **argv)
 {
     uint8_t d[128];hp_device_t dev={.addr=1,.mps0=64};uint32_t n;
@@ -327,6 +357,7 @@ int main(int argc,char **argv)
     reset_case(48000,120);hp_host_start();usb.timeouts=1;hp_tick();
     assert(hp_v[H_STATE]==HP_FAILED && hp_v[H_REASON]==HP_IO);usb.timeouts=0;hp_host_stop();
     midi_model();
+    sync_transport_model();
     /* Failure timestamps the forwarding boundary, not later USB teardown. */
     hp_diag_valid=0;hp_diag_nonce[0]=77;fm1_ms=1000;hp_diag_begin(fm1_ms,HP_BUILD_TAG);
     hm_events=100;hm_fanout=200;hm_forward=1;hp_running=1;fm1_ms=1100;hp_fail(HP_IO);
