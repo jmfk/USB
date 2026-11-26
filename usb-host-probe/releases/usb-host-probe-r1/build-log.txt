@@ -1,0 +1,43 @@
+PASS: real host code/model: discovery, three addresses, serial packets, mix identity, cadence, deadline/error/length aborts
+In file included from firmware/src/dinghy.c:14:
+firmware/src/probe_usb.h:89:22: warning: suggest braces around initialization of subobject [-Wmissing-braces]
+    hp_device_t dev={0};
+                     ^
+                     {}
+1 warning generated.
+loader: image 10484 B at 0x1c0a800, bss end 0x1c0ff50
+loader: ota.bin 9071 B
+  ok    .ram_text: 916 insns, no calls
+  ok    image 31852 B of 581564; RAM .data+.bss 23556 B of 98304; pool 30720 B of 344064
+  ok    register access: hal/ only (src/, loader/ clean)
+app      /work/build/dinghy.bin  31852 B
+loader   /work/build/loader/ota.bin  9071 B
+package  /work/build/dinghy.fwsc  612227 B, identity FM-1_990
+In file included from firmware/src/dinghy.c:12:
+firmware/src/probe_core.h: In function 'hp_output':
+firmware/src/probe_core.h:137:9: warning: this 'if' clause does not guard... [-Wmisleading-indentation]
+  137 |         if(v>32767)v=32767;if(v< -32768)v= -32768;
+      |         ^~
+firmware/src/probe_core.h:137:28: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'if'
+  137 |         if(v>32767)v=32767;if(v< -32768)v= -32768;
+      |                            ^~
+firmware/src/dinghy.c: In function 'hp_number':
+firmware/src/dinghy.c:29:5: warning: this 'while' clause does not guard... [-Wmisleading-indentation]
+   29 |     while(*name && n<18)line[n++]=*name++;line[n++]=' ';
+      |     ^~~~~
+firmware/src/dinghy.c:29:43: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'while'
+   29 |     while(*name && n<18)line[n++]=*name++;line[n++]=' ';
+      |                                           ^~~~
+firmware/src/dinghy.c:31:5: warning: this 'while' clause does not guard... [-Wmisleading-indentation]
+   31 |     while(j)line[n++]=digits[--j];line[n]=0;hp_text(y,line);
+      |     ^~~~~
+firmware/src/dinghy.c:31:35: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'while'
+   31 |     while(j)line[n++]=digits[--j];line[n]=0;hp_text(y,line);
+      |                                   ^~~~
+     1 ms  screen -> build/host/dinghy-1.ppm
+   800 ms  screen -> build/host/dinghy-800.ppm
+  1000 ms  screen -> build/host/dinghy-1000.ppm
+sound  -> build/host/dinghy.wav (44032 frames)
+screen -> build/host/dinghy-1.png
+screen -> build/host/dinghy-1000.png
+screen -> build/host/dinghy-800.png

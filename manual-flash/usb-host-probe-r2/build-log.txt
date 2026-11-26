@@ -1,0 +1,16 @@
+PASS: real host code/model: discovery, three addresses, serial packets, mix identity, cadence, deadline/error/length aborts
+loader: image 10484 B at 0x1c0a800, bss end 0x1c0ff50
+loader: ota.bin 9071 B
+  ok    .ram_text: 916 insns, no calls
+  ok    image 31960 B of 581564; RAM .data+.bss 23556 B of 98304; pool 30720 B of 344064
+  ok    register access: hal/ only (src/, loader/ clean)
+app      /work/build/dinghy.bin  31960 B
+loader   /work/build/loader/ota.bin  9071 B
+package  /work/build/dinghy.fwsc  612227 B, identity FM-1_990
+     1 ms  screen -> build/host/dinghy-1.ppm
+   800 ms  screen -> build/host/dinghy-800.ppm
+  1000 ms  screen -> build/host/dinghy-1000.ppm
+sound  -> build/host/dinghy.wav (44032 frames)
+screen -> build/host/dinghy-1.png
+screen -> build/host/dinghy-1000.png
+screen -> build/host/dinghy-800.png
