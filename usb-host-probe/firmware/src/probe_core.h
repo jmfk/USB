@@ -37,6 +37,7 @@ static uint8_t hp_audio_enabled=1,hp_defer_run;
 #include "midi_router.h"
 #include "midi_sync.h"
 #include "diagnostics.h"
+#include "profiler.h"
 
 static uint32_t hp_abs(int32_t a) { return (uint32_t)(a < 0 ? -a : a); }
 static uint32_t hp_hash(uint32_t h, uint32_t v) { return (h ^ v) * 16777619u; }

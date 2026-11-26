@@ -3,6 +3,7 @@
 static uint32_t hp_frozen[HP_FIELDS],hp_frozen_meta[18],hp_frozen_crc;
 static uint8_t hp_frozen_valid;
 static uint32_t hp_diag_frozen[HP_DIAG_WORDS],hp_diag_crc;
+static uint32_t hp_profile_frozen[HP_PROFILE_WORDS],hp_profile_crc;
 
 static uint32_t hp_crc_bytes(const uint8_t *p,uint32_t n,uint32_t c)
 {
@@ -13,12 +14,31 @@ static uint32_t hp_crc(void)
     uint32_t c=hp_crc_bytes((const uint8_t *)hp_frozen,sizeof hp_frozen,0xffffffffu);
     return ~hp_crc_bytes((const uint8_t *)hp_frozen_meta,sizeof hp_frozen_meta,c);
 }
+static void hp_profile_freeze(void)
+{
+ uint32_t *p=hp_profile_frozen;memset(p,0,sizeof hp_profile_frozen);
+ p[0]=0x31525048u;p[1]=1;p[2]=hp_diag[1];p[3]=hp_diag[2];memcpy(p+4,hp_diag+25,16);
+ p[8]=(uint32_t)hp_prof.wall;p[9]=(uint32_t)(hp_prof.wall>>32);
+ for(uint32_t i=0;i<HP_P_LANES;i++){volatile hp_prof_lane_t *a=&hp_prof.lane[i];uint32_t *b=p+10+4*i;b[0]=(uint32_t)a->ticks;b[1]=(uint32_t)(a->ticks>>32);b[2]=a->calls;b[3]=a->max;}
+ p[34]=hp_prof.gap_max;p[35]=hp_prof.gap_late;p[36]=hp_prof.frame_min;p[37]=hp_prof.frames;p[38]=hp_prof.frame_late;p[39]=hp_v[H_RATE];
+ p[40]=hp_v[H_A_MIN];p[41]=hp_v[H_B_MIN];p[42]=hp_v[H_A_UNDER];p[43]=hp_v[H_B_UNDER];p[44]=hp_v[H_A_OVER];p[45]=hp_v[H_B_OVER];p[46]=hp_v[H_MISSED];p[47]=hp_v[H_MAX_US];
+ p[48]=hp_diag[17];p[49]=hp_diag[18];p[50]=hp_diag[13];p[51]=hp_diag[12];
+ p[52]=hm_sync_clocks;p[53]=hm_sync_skipped;p[54]=hm_sync_late;p[55]=hm_sync_rejected;
+ p[56]=hp_audio_enabled;
+#ifdef DINGHY_HOST
+ p[57]=1;
+#else
+ p[57]=FM1_TICKS_PER_US;
+#endif
+ p[58]=hp_diag[4];p[59]=hp_diag[5];p[60]=hp_diag[6];p[61]=hp_diag[7];
+ hp_profile_crc=~hp_crc_bytes((const uint8_t *)p,sizeof hp_profile_frozen,0xffffffffu);
+}
 static void hp_freeze(void)
 {
     uint32_t i;
     if(!hp_diag_valid){
         hp_diag_finish(fm1_ms,hp_v[H_STATE],hp_v[H_REASON]);
-        if(hp_diag_valid){memcpy(hp_diag_frozen,hp_diag,sizeof hp_diag);hp_diag_crc=~hp_crc_bytes((const uint8_t *)hp_diag_frozen,sizeof hp_diag_frozen,0xffffffffu);}
+        if(hp_diag_valid){hp_profile_freeze();memcpy(hp_diag_frozen,hp_diag,sizeof hp_diag);hp_diag_crc=~hp_crc_bytes((const uint8_t *)hp_diag_frozen,sizeof hp_diag_frozen,0xffffffffu);}
     }
     memcpy(hp_frozen,hp_v,sizeof hp_v);
     for(i=0;i<3;i++) {
@@ -88,6 +108,9 @@ static int hp_sysex(const uint8_t *p,uint32_t n)
     } else if(cmd==9 && n==5){
         if(!hp_diag_valid)out[6]=3;
         else{memcpy(raw,hp_diag_frozen,sizeof hp_diag_frozen);ota_wr32(raw+sizeof hp_diag_frozen,hp_diag_crc);len=sizeof hp_diag_frozen+4;}
+    } else if(cmd==13 && n==5){
+        if(!hp_diag_valid)out[6]=3;
+        else{memcpy(raw,hp_profile_frozen,sizeof hp_profile_frozen);ota_wr32(raw+sizeof hp_profile_frozen,hp_profile_crc);len=sizeof hp_profile_frozen+4;}
     } else if(cmd==10 && n==13){
         run=p[5]|(uint32_t)p[6]<<7|(uint32_t)p[7]<<14|(uint32_t)p[8]<<21;
         uint32_t crc=p[9]|(uint32_t)p[10]<<7|(uint32_t)p[11]<<14|(uint32_t)p[12]<<21;

@@ -6,3 +6,7 @@ usb-host-probe/hardware-results/
 manual-flash/.install.lock
 manual-flash/**/logs/
 manual-flash/**/status.json
+benchmark-app/.build/
+benchmark-app/.swiftpm/
+benchmark-app/dist/
+benchmark-app/runs/

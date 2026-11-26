@@ -357,3 +357,94 @@ Final pre-PR verification (2026-11-26):
 - R14 root launcher syntax/file-only --check, specs governance and diff whitespace:
   PASS. Previous219 release files hash checked unchanged.
 - One coherent graphic UI/sync PR; physical acceptance remains pending.
+
+## R15 — device profiling and Swift benchmark app (2026-11-26)
+
+Local batch `codex/profiler-benchmark`, based on PR2 graphic/sync work.
+- Profiling schema1: core0 timer/audio/display time with IRQ overlap subtraction,
+  inclusive host/mix/MIDI subdivisions,64-bit tick totals, timer gaps, observed
+  USB audio frame margin and buffer/error/clock counters. Core1 is not started.
+- Command13 frozen profile shares diagnostic build/sequence/nonce; Python persists
+  raw profile+diagnostics before ACK. Independent audio snapshot ACK remains durable.
+- Native SwiftUI/CoreMIDI USB Bench: idle/audio,100/1000 short SysEx/s,20x256-byte
+  SysEx/s and clock monitoring; manual topology/PLAY, explicit endpoints, per-attempt
+  results, recovery without traffic replay and independent offline validator.
+- Timing reports are instrumented workload, not total CPU. External interface and
+  Mac scheduling affect observed round trips. Audio sources/recording are external.
+
+Evidence: `build.py --revision usb-host-probe-r15 --verify-only` and sealed build
+PASS; C sanitizers/actual transport+wire profile fixtures,19 Python tests.
+`python3 benchmark-app/test_bridge.py`:3 PASS, including lost ARM/audio ACK recovery.
+`swift test --package-path benchmark-app`:7 PASS, including real SIGTERM/SIGKILL
+and independent Python validation of Swift artifacts. Native configuration view
+checked light/dark, keyboard command palette and system theme restored. The
+NSHostingView bitmap capture was blank; actual app screenshots via Computer Use
+were used instead. Report view awaits real hardware data.
+`prepare_manual.py --revision usb-host-probe-r15`: file-only checks PASS.
+App release build/ad-hoc signature prepared locally; ignored dist output.
+Build718334333: image73488 B, RAM57572/98304 B, pool30720/344064 B. Existing
+model-only unused-global warning remains; new warning fixed. Unrelated suites
+skipped. No GitHub Actions workflow, device access, benchmark traffic or flashing.
+
+Handoff: Flash USB R15.command and benchmark-app/dist/USB Bench.app. Local app
+uses project Python environment; not notarized/standalone-distributed. Manual
+installation only. Hardware/profile overhead/clock acceptance pending. Default R16.
+
+Final handoff checks: R15 root launcher syntax/--check, specs governance,
+source whitespace, local mido import without ports and app codesign verification
+PASS.237 earlier release files hash checked unchanged. App clock capture counts
+coalesced/unresolved timestamp pulses separately instead of treating them as
+individually timed intervals. No push/PR was requested for this new batch.
+
+## R16 — CPU/revision on every menu page (2026-11-26)
+
+Shared y44 status strip: C0 measured-work mean since run start, -- without
+samples, C1:OFF explicitly unused, generated HP_LABEL revision. Snapshot64-bit
+counters with IRQs masked, percentage arithmetic outside mask with bounded
+32-bit rounded division. No new wire ABI or core1 startup. Swift shared header
+shows bundled revision/build and labels C0 as frozen, C1 unused.
+
+`build.py --revision usb-host-probe-r16 --verify-only` and sealed build PASS.
+New focused coverage checks every menu/main/sub/page for header presence, glyph
+fit, content boundary and unchanged redraw. Long-run percentage rounding found
+and fixed before sealing. Native route screenshot checked, no overlap. Target
+image73852 B, RAM57572/98304 B;19 Python tests and existing C models pass.
+Swift release build passes; unchanged Swift core recovery evidence reused.
+R16 manual package file-only checks pass. App rebuilt with R16 resource handoff.
+Build1675001374, PREPARED_NOT_INSTALLED. No device/MIDI access or flashing.
+Previous packages immutable; next default R17.
+
+## Guided Mac evaluation and logs (2026-11-26)
+
+Same local profiler batch, app-only follow-up. Simplified native flow with one
+stage-specific primary action and evaluation/results/log destinations. Explicit
+waits for USB-device connection, powered-hub/physical PLAY, and STOP/return cable.
+Traffic abort is incomplete, never a pause/replay of accepted physical samples.
+Old app results can be inspected read-only; execution retains exact-code identity.
+
+Added fsynced events.jsonl, bounded500-event UI, search/level/follow-live controls,
+streamed bridge command messages and separately labeled frozen FM-1 events.
+ACK progress is emitted only after raw data is durable. Torn final log line
+repair, duplicate/interior corruption rejection and write-failure poisoning
+prevent misleading recovery. workflow.json is a projection of durable artifacts.
+
+Verification: Swift focused suite12 PASS, Python bridge4 PASS, release app build
+and ad-hoc signing PASS. Real SIGTERM/SIGKILL fixtures preserve host counters and
+logs. Native light/dark configuration/wait/log views, command navigation, saved
+result reopening and log search checked. Result screenshots used clearly labeled
+UI-FIXTURE synthetic data, not hardware measurements. One unarmed GUI test attempt
+was labeled UI-verifiering; no device commands, MIDI traffic or flashing.
+Firmware suites reused for unchanged sealed R16; no new firmware package.
+Behavior sketch: benchmark-app/design/evaluation-flow.html; docs updated.
+Local only, no new push/PR.
+
+## Requested publication (2026-11-26)
+
+Owner requested push and a PR for the complete profiler/benchmark batch.
+Base is codex/graphic-ui-midi-sync (open PR2, head a03f880), so this PR excludes
+its already reviewed graphic/sync diff. Reuse passing R15/R16 build/model/Python
+evidence and final Swift12/bridge4 tests plus release signing. Specs governance,
+source whitespace and R15/R16 immutable release/handoff integrity pass.
+No Actions workflows configured; no unrelated suite rerun for publication.
+Local app/build outputs and the unrelated editor swap file are excluded.
+Manual firmware installation only; no device acceptance or merge implied.

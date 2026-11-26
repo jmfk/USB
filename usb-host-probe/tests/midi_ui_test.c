@@ -57,6 +57,25 @@ int main(void)
    if(boxes[j].x==122&&boxes[j].y==222)assert(!boxes[j].text[0]);
   }
  }
+ /* Global identity/workload strip exists on every family, main, sub and page. */
+ hp_prof.wall=10000;hp_prof.lane[HP_P_TIMER].ticks=1000;hp_prof.lane[HP_P_AUDIO].ticks=500;hp_prof.lane[HP_P_UI].ticks=500;
+ for(uint32_t m=0;m<4;m++)for(uint32_t main=0;main<hp_main_count(m);main++){
+  hp_menu=m;hp_main_page[m]=main;
+  for(uint32_t sub=0;sub<hp_sub_count();sub++){
+   hp_sub[m][main]=sub;
+   for(uint32_t page=0;page<hp_page_count();page++){
+    hp_sub_page[m][main][sub]=page;hp_draw();uint32_t found=0;
+    hp_ui_box_t *boxes=hp_ui_frames[hp_ui_frame^1];
+    for(uint32_t j=0;j<hp_ui_count[hp_ui_frame^1];j++)if(boxes[j].y==44){
+     assert(!strcmp(boxes[j].text,"C0:20% C1:OFF " HP_LABEL));assert(text_w(&FONT_S,boxes[j].text)<=(int32_t)boxes[j].w);assert(boxes[j].y+boxes[j].h<=60);found++;
+    }
+    assert(found==1);assert(hp_draw()==0);
+   }
+  }
+ }
+ hp_prof.wall=0;hp_draw();hp_ui_box_t *strip=hp_ui_frames[hp_ui_frame^1];uint32_t unknown=0;
+ for(uint32_t j=0;j<hp_ui_count[hp_ui_frame^1];j++)if(strip[j].y==44)unknown=!strcmp(strip[j].text,"C0:-- C1:OFF " HP_LABEL);
+ assert(unknown);hp_prof.lane[HP_P_TIMER].ticks=hp_prof.lane[HP_P_AUDIO].ticks=hp_prof.lane[HP_P_UI].ticks=0;
  assert(hp_edit(120,0x7fffffff,30,300)==300);assert(hp_edit(120,(-2147483647-1),30,300)==30);
  hp_diag_valid=hp_frozen_valid=0;hp_v[H_STATE]=HP_IDLE;hp_audio_enabled=1;hp_menu=3;hp_sub[3][0]=0;hp_sub_page[3][0][0]=0;
  host_enc[ENC_KNOB2]=1;hp_controls(0);assert(hm_sync_config.enabled&&!hp_audio_enabled&&!hp_running);

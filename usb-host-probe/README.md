@@ -106,6 +106,46 @@ Vanliga USB-hubbar är anslutningar, inte egna MIDI-portar.
    vara anslutna före upptäckt; ingen hotplug. För AUDIO+MIDI krävs först samma
    datorarmering och kabelbyte som i ljudprovet ovan.
 
+## Gemensam statusrad (R16)
+
+Alla instrumentsidor visar `C0:nn% C1:OFF R16` mellan sidmarkering och innehåll.
+Revisionen kommer från byggidentiteten. C0 är avrundat medelvärde för det
+instrumenterade arbetet sedan senaste körstart, inte total CPU-belastning.
+Före första provet visas `C0:--`; efter stopp behålls senaste värdet. C1:OFF
+betyder att kärna1 inte används, inte att en mätning har visat0%. Statusraden
+ändrar inga transport-/menyfunktioner. Mac-appens rubrik visar också revision
+samt båda kärnorna och anger att dess CPU0-värde kommer från en fryst profil.
+
+## Profilering (R15)
+
+R15 lägger till en fryst profil över samma armerade körning som MIDI-diagnostiken.
+`performance.py fetch` hämtar båda CRC-kontrollerade posterna innan kvittens.
+`report` visar profilen under `profile` och `validate` kontrollerar dess identitet.
+Profileringspaketet anger `profile_schema: 1`; äldre paket behåller sitt protokoll.
+
+Mätt arbete på kärna0 omfattar hela timer-ISR:n, ljud-ISR exklusive nästlad timer
+samt skärmrendering exklusive IRQ-tid. USB-hostservice, ljudmix och MIDI är
+inkluderande delmätningar och får inte summeras med timern. Räknare använder
+64-bitars ticktotaler och32-bitars maxvärden, med24 tick/µs på enheten. Polling,
+reglagehantering, andra IRQ:er och wrapper-overhead ingår inte; profilprober inne
+i mätta regioner belastar mätningen. Detta är **inte total CPU-belastning** och
+kärna1 startas inte.
+
+Ljudets minsta observerade frame-marginal räknas från mjukvarans observation av
+ny USB-frame till färdig utgående ljudöverföring, med1000µs budget. Det är inte
+en exakt SOF-mätning. Sena/missade frames, buffertminimum och under/overflows
+redovisas separat; buffertdrift kan bero på källornas klockor. Timerintervall
+över150µs räknas. MON/PERF har en extra sida med timer/mix-max, frame-marginal
+(0 om ingen frame observerats) och försenade timeranrop.
+
+Swift-appen **USB Bench** i `benchmark-app` kan armera/hämta profiler och skicka
+numrerade testprober via valda CoreMIDI-portar. Den kräver ett separat MIDI-
+interface för testtrafik under USB-hostkörning. USB0 växlas fysiskt mellan host
+för instrumenten och device för hämtning på Mac; appen startar aldrig host/flash.
+Ljudkällor/ljudkontroll är externa. Se `benchmark-app/README.md` för koppling,
+scenarier, hållbara resultat och mätbegränsningar. Verklig profileringskostnad,
+CPU-marginal och MIDI-timing måste mätas av ägaren på hårdvaran.
+
 ## MIDI-synk (R14)
 
 **SYNC → CLK**: K1 väljer30–300 BPM, K2 slår intern klocka av/på medan

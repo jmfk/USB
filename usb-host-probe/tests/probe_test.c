@@ -219,6 +219,12 @@ static void test_wire(const char *fixture)
     for(uint32_t j=7;j+1<fake_wire_len;j++){a|=(uint32_t)fake_wire[j]<<b;b+=7;if(b>=8){raw[k++]=a&255;a>>=8;b-=8;}}
     assert(k==sizeof hp_diag_frozen+4 && !memcmp(raw,hp_diag_frozen,sizeof hp_diag_frozen));
     if(fixture){char path[512];snprintf(path,sizeof path,"%s.performance",fixture);FILE *f=fopen(path,"wb");assert(f);assert(fwrite(raw,1,k,f)==k);fclose(f);}
+    req[4]=13;hp_sysex(req,5);assert(!fake_wire[6]);a=b=k=0;
+    for(uint32_t j=7;j+1<fake_wire_len;j++){a|=(uint32_t)fake_wire[j]<<b;b+=7;if(b>=8){raw[k++]=a&255;a>>=8;b-=8;}}
+    assert(k==260 && !memcmp(raw,hp_profile_frozen,256));
+    assert(hp_profile_frozen[2]==HP_BUILD_TAG && hp_profile_frozen[4]==1 && hp_profile_frozen[7]==4);
+    if(fixture){char path[512];snprintf(path,sizeof path,"%s.profile",fixture);FILE *f=fopen(path,"wb");assert(f);assert(fwrite(raw,1,k,f)==k);fclose(f);}
+    uint32_t saved_profile=hp_profile_crc;hp_prof.frames++;hp_freeze();assert(hp_profile_crc==saved_profile);
     uint32_t saved_crc=hp_diag_crc;hp_diag[19]++;hp_freeze();assert(hp_diag_crc==saved_crc);
     req[4]=11;hp_sysex(req,5);assert(!fake_wire[6]);
     hp_owns_usb=1;req[4]=9;hp_sysex(req,5);assert(fake_wire[6]==1);hp_owns_usb=0;
@@ -226,6 +232,7 @@ static void test_wire(const char *fixture)
     hp_sysex(req,13);assert(hp_diag_valid && fake_wire[6]==2);
     put7(req+9,hp_diag_crc&0x0fffffff,4);hp_sysex(req,13);assert(!hp_diag_valid && !fake_wire[6]);
     req[4]=9;hp_sysex(req,5);assert(fake_wire[6]==3);
+    req[4]=13;hp_sysex(req,5);assert(fake_wire[6]==3);
     req[4]=1;put7(req+5,77,4);put7(req+9,10000,3);put7(req+12,48000,3);req[15]=25;
     hp_sysex(req,17);assert(fake_wire[6]==3 && hp_frozen_valid); /* cannot replace uncollected snapshot */
     req[4]=3;put7(req+5,hp_frozen[H_RUN],4);put7(req+9,hp_frozen_crc&0x0fffffffu,4);

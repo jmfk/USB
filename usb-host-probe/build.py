@@ -17,7 +17,7 @@ BASE = ROOT/'vendor/dinghy'
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision', default='usb-host-probe-r15')
+    ap.add_argument('--revision', default='usb-host-probe-r17')
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument('--stage-only', action='store_true')
     mode.add_argument('--verify-only', action='store_true', help='Run local checks/build without creating a release')
@@ -51,6 +51,27 @@ def main():
     anchor='            ota_session();'
     assert s.count(anchor)==1
     s=s.replace(anchor,'            {hp_ui_invalidate();ota_session();hp_ui_invalidate();}')
+    # Wrap whole ISRs: timer is highest priority; audio excludes nested timer work.
+    s=s.replace('void fm1_timer5_irq(void)', 'static void hp_timer_work(void)')
+    anchor='extern void isr_timer5(void);'
+    assert s.count(anchor)==1
+    s=s.replace(anchor,'''void fm1_timer5_irq(void)
+{
+ uint32_t start=fm1_ticks();hp_prof_period(start,FM1_TICKS_PER_US);
+ hp_timer_work();hp_prof_add(HP_P_TIMER,fm1_ticks()-start);
+}
+extern void isr_timer5(void);''')
+    s=s.replace('void fm1_alnk0_irq(void)', 'static void hp_audio_irq_work(void)')
+    anchor='extern void isr_alnk0(void);'
+    assert s.count(anchor)==1
+    s=s.replace(anchor,'''void fm1_alnk0_irq(void)
+{
+ fm1_irq_off();uint32_t start=fm1_ticks();uint64_t timer=hp_prof.lane[HP_P_TIMER].ticks;fm1_irq_on();
+ hp_audio_irq_work();fm1_irq_off();uint32_t elapsed=fm1_ticks()-start;
+ uint64_t nested=hp_prof.lane[HP_P_TIMER].ticks-timer;
+ hp_prof_add(HP_P_AUDIO,nested<elapsed?elapsed-(uint32_t)nested:0);fm1_irq_on();
+}
+extern void isr_alnk0(void);''')
     platform.write_text(s)
     ota = stage/'firmware/src/ota.c'
     s = ota.read_text();anchor = '    d = ota_unpack7(p, n, ota_dec, sizeof ota_dec);'
@@ -69,7 +90,7 @@ def main():
     (stage/'firmware/src/run_identity.h').write_text(f'#pragma once\n#define HP_BUILD_TAG {tag}u\n#define HP_LABEL "{label}"\n')
     identity = dict(revision=args.revision, build_tag=tag, source_sha256=source,
                     status='PREPARED_NOT_INSTALLED', hardware_verified=False,
-                    device_access=False, midi=dict(protocol='USB MIDI 1.0 Full Speed bulk', inputs=32, outputs=32, persistence='session', hardware_verified=False), formats=['UAC1 PCM16 stereo 44100/48000'],
+                    device_access=False, profile_schema=1, midi=dict(protocol='USB MIDI 1.0 Full Speed bulk', inputs=32, outputs=32, persistence='session', hardware_verified=False), formats=['UAC1 PCM16 stereo 44100/48000'],
                     output_sync=['adaptive', 'synchronous'], run_ms=[10000, 60000, 300000])
     (stage/'identity.json').write_text(json.dumps(identity, indent=2)+'\n')
     if args.stage_only:
@@ -83,6 +104,8 @@ cc -O1 -g -Wall -Wextra -Wno-unused-function -Wno-misleading-indentation -fsanit
 ASAN_OPTIONS=detect_leaks=0 build/midi-core-test
 cc -O1 -g -Wall -Wextra -Wno-unused-function -Wno-misleading-indentation -fsanitize=address,undefined -Ifirmware/src tests/midi_sync_test.c -o build/midi-sync-test
 ASAN_OPTIONS=detect_leaks=0 build/midi-sync-test
+cc -O1 -g -Wall -Wextra -fsanitize=address,undefined -Ifirmware/src tests/profiler_test.c -o build/profiler-test
+ASAN_OPTIONS=detect_leaks=0 build/profiler-test
 cc -O1 -g -Wall -Wno-unused-function -Wno-misleading-indentation -fsanitize=address,undefined -DDINGHY_HOST -Ifirmware/hal -Ifirmware/src -Ifirmware/gen tests/midi_ui_test.c -o build/midi-ui-test
 ASAN_OPTIONS=detect_leaks=0 build/midi-ui-test
 sh build.sh --board fm1
