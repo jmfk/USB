@@ -41,16 +41,42 @@ def decode(raw):
         limitations='Service duration is not end-to-end MIDI latency or total CPU usage. Queue peaks are sampled. Packet counts exclude stop cleanup; cleanup_errors is finalized afterwards. Logs are bounded diagnostics, not MIDI payload capture.')
 
 
+PROFILE_LANES=('timer','audio_irq','display','host','mix','midi')
+
+def decode_profile(raw,diagnostic):
+    if len(raw)!=260 or zlib.crc32(raw[:-4])!=struct.unpack('<I',raw[-4:])[0]:raise ValueError('Profile size/CRC mismatch')
+    w=struct.unpack('<64I',raw[:-4]);d=diagnostic['metrics']
+    if w[:2]!=(0x31525048,1) or w[2]!=d['build'] or w[3]!=d['sequence'] or list(w[4:8])!=diagnostic['nonce']:raise ValueError('Profile run identity mismatch')
+    if w[57] not in (1,24) or w[56]>1 or tuple(w[58:62])!=(d['state'],d['reason'],d['topology_hash'],d['route_hash']):raise ValueError('Invalid profile metadata')
+    wall=w[8]+(w[9]<<32);tpu=w[57];lanes={}
+    for i,name in enumerate(PROFILE_LANES):
+        a,b,calls,peak=w[10+4*i:14+4*i];ticks=a+(b<<32)
+        lanes[name]=dict(total_us=ticks/tpu,calls=calls,max_us=peak/tpu,wall_percent=100*ticks/wall if wall else None)
+    busy=sum(lanes[n]['total_us'] for n in ('timer','audio_irq','display'))
+    rate=w[39];audio=bool(w[56])
+    return dict(schema_version=1,build=w[2],sequence=w[3],nonce=list(w[4:8]),wall_us=wall/tpu,
+        instrumented_core0_percent=100*busy/(wall/tpu) if wall else None,lanes=lanes,
+        timer_gap_max_us=w[34]/tpu,timer_gaps_over_150us=w[35],
+        audio=dict(enabled=audio,rate=rate,observed_frames=w[37],late_frames=w[38],
+            observed_frame_margin_min_us=w[36]/tpu if audio and w[37] and w[36]!=0xffffffff else None,
+            buffer_a_min_us=w[40]*1000000/rate if audio and rate and w[37] else None,
+            buffer_b_min_us=w[41]*1000000/rate if audio and rate and w[37] else None,
+            underflows=[w[42],w[43]],overflows=[w[44],w[45]],missed_frames=w[46],transaction_max_us=w[47]),
+        midi=dict(sampled_input_queue_max=w[48],sampled_output_queue_max=w[49],backpressure=w[50],retries=w[51],clock_queued=w[52],clock_skipped=w[53],clock_late_service=w[54],cc_rejected=w[55]),
+        hardware_verified=False,limitations='Instrumented core0 scheduled work only; idle polling, controls, other IRQs and wrapper overhead excluded; probes inside timed regions included. Host/mix/MIDI overlap timer: do not sum them. Frame margin starts at observed USB frame, not exact SOF. No core1 or external latency/jitter measurement.')
+
+
 def validate(root):
     m=c.load(root/'manifest.json');record=c.load(root/'result.json');report=decode(bytes.fromhex(record['raw_hex']))
     if record['report']!=report or report['metrics']['build']!=m['build'] or report['nonce']!=m['nonce'] or record['manifest_sha256']!=hashlib.sha256(c.canonical(m)).hexdigest():
         raise ValueError('Local diagnostic identity/integrity mismatch')
     if c.load(root/'COMPLETE')!={'sha256':hashlib.sha256(c.canonical(record)).hexdigest()}:
         raise ValueError('Invalid completion checksum')
+    if 'profile_raw_hex' in record and record.get('profile')!=decode_profile(bytes.fromhex(record['profile_raw_hex']),report):raise ValueError('Local profile integrity mismatch')
     return report
 
 
-def commit(root,ident,raw):
+def commit(root,ident,raw,profile_raw=None):
     report=decode(raw)
     if report['metrics']['build']!=ident['build_tag']:raise ValueError('Unexpected diagnostic build')
     m=dict(schema_version=1,build=ident['build_tag'],source_sha256=ident['source_sha256'],
@@ -59,6 +85,8 @@ def commit(root,ident,raw):
         raise ValueError('Run identity changed; choose a new directory')
     c.atomic(root/'manifest.json',m)
     record=dict(raw_hex=raw.hex(),report=report,manifest_sha256=hashlib.sha256(c.canonical(m)).hexdigest())
+    if ident.get('profile_schema') and profile_raw is None:raise ValueError('Profiling firmware requires profile before ACK')
+    if profile_raw is not None:record.update(profile_raw_hex=profile_raw.hex(),profile=decode_profile(profile_raw,report))
     if (root/'result.json').exists() and c.load(root/'result.json')!=record:
         raise ValueError('Physical run changed; choose a new directory')
     c.atomic(root/'result.json',record)
@@ -71,7 +99,7 @@ def fetch(link,root,ident):
     if status[0]!=ident['build_tag']:raise ValueError('Unexpected firmware; no ACK sent')
     # Recover a crash after result fsync but before COMPLETE, without reading a new run.
     if (root/'result.json').exists() and not (root/'COMPLETE').exists():
-        record=c.load(root/'result.json');commit(root,ident,bytes.fromhex(record['raw_hex']))
+        record=c.load(root/'result.json');commit(root,ident,bytes.fromhex(record['raw_hex']),bytes.fromhex(record['profile_raw_hex']) if 'profile_raw_hex' in record else None)
     if (root/'COMPLETE').exists():
         report=validate(root)
         m=c.load(root/'manifest.json')
@@ -84,7 +112,8 @@ def fetch(link,root,ident):
         if not status[1]:raise ValueError('No stopped run waiting; run and STOP physically first')
         raw=link.request(9);report=decode(raw)
         if (report['metrics']['sequence'],report['crc32'],report['nonce'])!=(status[2],status[3],list(status[4:])):raise ValueError('Device report changed during download')
-        report=commit(root,ident,raw)
+        profile_raw=link.request(13) if ident.get('profile_schema') else None
+        report=commit(root,ident,raw,profile_raw)
     # COMPLETE is durable before ACK; lost ACKs only retry the same sequence/CRC.
     if status[1]:link.request(10,c.seven(report['metrics']['sequence'],4)+c.seven(report['crc32']&0x0fffffff,4))
     return report
@@ -137,6 +166,9 @@ def main():
         if args.command=='compare':
             if not args.other:ap.error('compare requires --other')
             report=compare(report,validate(args.other.resolve()))
+    if args.command!='arm' and (root/'result.json').exists():
+        record=c.load(root/'result.json')
+        if 'profile' in record and args.command!='compare':report=dict(report,profile=record['profile'])
     if args.command!='arm':print("Durable results: 1/1 (100%); checkpoint: "+str(root),file=sys.stderr)
     print(json.dumps(report,indent=2))
 

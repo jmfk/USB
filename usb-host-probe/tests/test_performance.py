@@ -23,6 +23,13 @@ def fixture():
     raw=struct.pack('<89I',*w)
     return raw+struct.pack('<I',zlib.crc32(raw))
 
+def profile_fixture(raw=None):
+    d=p.decode(raw or fixture());v=d['metrics'];w=[0]*64
+    w[:8]=[0x31525048,1,v['build'],v['sequence'],*d['nonce']]
+    w[8]=240000;w[10:14]=[24000,0,100,2400];w[14:18]=[12000,0,10,1200];w[18:22]=[2400,0,1,2400]
+    w[34:42]=[2400,0,12000,10,0,48000,192,144];w[56:62]=[1,24,v['state'],v['reason'],v['topology_hash'],v['route_hash']]
+    b=struct.pack('<64I',*w);return b+struct.pack('<I',zlib.crc32(b))
+
 class Link:
     def __init__(self,raw):self.raw=raw;self.valid=1;self.reads=0;self.acks=0;self.lost=False;self.pending=[0,0,0,0];self.lost_arm=False
     def request(self,cmd,data=()):
@@ -33,6 +40,7 @@ class Link:
             if self.lost_arm:raise TimeoutError('arm reply lost')
             return b''
         if cmd==9:self.reads+=1;return self.raw
+        if cmd==13:return self.profile if hasattr(self,'profile') else profile_fixture(self.raw)
         if cmd==10:
             self.acks+=1;self.valid=0
             if self.lost:raise TimeoutError('ACK reply lost')
@@ -44,6 +52,32 @@ class Tests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)/'run';self.root.mkdir()
         self.ident=dict(build_tag=77,source_sha256='fixture');self.link=Link(fixture())
     def tearDown(self):self.temp.cleanup()
+    def test_profile_metrics_and_identity(self):
+        d=p.decode(fixture());v=p.decode_profile(profile_fixture(),d)
+        self.assertEqual(v['instrumented_core0_percent'],16)
+        self.assertEqual(v['audio']['observed_frame_margin_min_us'],500)
+        self.assertEqual(v['audio']['buffer_a_min_us'],4000)
+        bad=bytearray(profile_fixture());bad[16]^=1;bad[-4:]=struct.pack('<I',zlib.crc32(bad[:-4]))
+        with self.assertRaises(ValueError):p.decode_profile(bytes(bad),d)
+    def test_profile_required_before_ack_and_resume(self):
+        self.ident['profile_schema']=1;self.link.profile=b'bad'
+        with self.assertRaises(ValueError):p.fetch(self.link,self.root,self.ident)
+        self.assertEqual(self.link.acks,0)
+        self.link.profile=profile_fixture();self.link.lost=True
+        with self.assertRaises(TimeoutError):p.fetch(self.link,self.root,self.ident)
+        self.assertIn('profile',p.c.load(self.root/'result.json'))
+        self.link.lost=False;p.fetch(self.link,self.root,self.ident)
+        self.assertEqual(self.link.acks,1)
+    def test_profile_crash_between_commit_and_completion(self):
+        self.ident['profile_schema']=1;original=p.c.atomic
+        def crash(path,data):
+            if Path(path).name=='COMPLETE':raise KeyboardInterrupt()
+            original(path,data)
+        with patch.object(p.c,'atomic',crash):
+            with self.assertRaises(KeyboardInterrupt):p.fetch(self.link,self.root,self.ident)
+        self.assertEqual(self.link.acks,0)
+        p.fetch(self.link,self.root,self.ident);self.assertEqual(self.link.reads,1)
+        self.assertEqual(self.link.acks,1)
     def test_rates_and_crc(self):
         v=p.decode(fixture());self.assertEqual(v['rates']['events_per_second'],100);self.assertEqual(v['rates']['fanout_per_second'],200)
         self.assertFalse(v['hardware_verified'])
@@ -112,7 +146,9 @@ p.commit(Path(sys.argv[2]),dict(build_tag=77,source_sha256='fixture'),raw)
 
 if __name__=='__main__':
     if len(sys.argv)>1:
-        actual=p.decode(Path(sys.argv.pop(1)).read_bytes())
+        fixture_path=Path(sys.argv.pop(1));actual=p.decode(fixture_path.read_bytes())
+        prof=p.decode_profile(Path(str(fixture_path).removesuffix('.performance')+'.profile').read_bytes(),actual)
+        assert prof['build']==12345 and prof['schema_version']==1
         assert actual['metrics']['build']==12345 and actual['metrics']['log_dropped']>0
         assert actual['metrics']['service_max_us']==42
         print('PASS: actual C diagnostic SysEx fixture decoded/CRC-checked')

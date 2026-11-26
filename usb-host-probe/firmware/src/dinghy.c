@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include <stdint.h>
+#include "profiler.h"
 static volatile uint8_t hp_owns_usb;
 static void hp_tick(void);
 static void hp_ui_invalidate(void);
@@ -132,7 +133,27 @@ static void hp_port_heading(uint32_t y,const char *name,uint32_t index,const hm_
     line[n++]=' ';line[n++]='E';line[n++]=hex[p->ep>>4];line[n++]=hex[p->ep&15];line[n]=0;
     hp_text(y,line);
 }
-static uint32_t hp_draw(void)
+static void hp_cpu_strip(void)
+{
+#ifndef DINGHY_HOST
+ fm1_irq_off();
+#endif
+ uint64_t wall=hp_prof.wall,busy=hp_prof.lane[HP_P_TIMER].ticks+hp_prof.lane[HP_P_AUDIO].ticks+hp_prof.lane[HP_P_UI].ticks;
+#ifndef DINGHY_HOST
+ fm1_irq_on();
+#endif
+ char line[40]="C0:",digits[3];uint32_t n=3,k=0;
+ if(!wall){line[n++]='-';line[n++]='-';}
+ else{
+  uint32_t percent=hp_prof_percent(busy,wall);
+  do{digits[k++]='0'+percent%10;percent/=10;}while(percent);
+  while(k)line[n++]=digits[--k];
+  line[n++]='%';
+ }
+ const char *tail=" C1:OFF " HP_LABEL;while(*tail&&n<sizeof line-1)line[n++]=*tail++;line[n]=0;
+ hp_color_box(4,44,232,line,0,HP_DIM,C_BLACK);
+}
+static uint32_t hp_draw_work(void)
 {
     uint32_t state=hp_v[H_STATE],editable=!hp_running && !hm_stopping && (!hp_owns_usb || state==HP_READY);
     if(state>HP_READY)state=HP_FAILED;
@@ -145,6 +166,7 @@ static uint32_t hp_draw(void)
     hp_color_box(4,28,112,pages,0,HP_DIM,C_BLACK);
     static const char *const status[]={"DEVICE","ARMED","SCAN","RUN","DONE","ERROR","STOPPED","READY"};
     hp_color_box(120,28,116,hp_diag_valid?"LOG READY":status[state],2,state==HP_FAILED?HP_ERR:state==HP_RUNNING?HP_ON:HP_WARN,C_BLACK);
+    hp_cpu_strip();
     if(hp_menu==3){
         if(!sub&&!page){
             char tempo[12];uint32_t bpm=hm_sync_config.bpm,k=0;if(bpm>=100)tempo[k++]='0'+bpm/100;tempo[k++]='0'+(bpm/10)%10;tempo[k++]='0'+bpm%10;tempo[k++]=' ';tempo[k++]='B';tempo[k++]='P';tempo[k++]='M';tempo[k]=0;
@@ -196,7 +218,16 @@ static uint32_t hp_draw(void)
     }else if(hp_menu==1){
         if(!sub){hp_number(62,"MIDI RX",hm_rx_packets);hp_number(88,"MIDI TX",hm_tx_packets);}
         else if(sub==1){hp_number(62,"FAULT",hm_fault);hp_text(100,hp_reasons[hp_v[H_REASON]<=HP_NO_MIDI?hp_v[H_REASON]:HP_IO]);}
-        else{hp_number(62,"SERVICE MAX US",hp_diag[19]);hp_number(90,"IN QUEUE MAX",hp_diag[17]);hp_number(118,"OUT QUEUE MAX",hp_diag[18]);hp_number(146,"LOG DROPPED",hp_diag[23]);}
+        else if(!hp_selected_page()){hp_number(62,"SERVICE MAX US",hp_diag[19]);hp_number(90,"IN QUEUE MAX",hp_diag[17]);hp_number(118,"OUT QUEUE MAX",hp_diag[18]);hp_number(146,"LOG DROPPED",hp_diag[23]);}
+        else{
+#ifdef DINGHY_HOST
+            uint32_t tpu=1;
+#else
+            uint32_t tpu=FM1_TICKS_PER_US;
+#endif
+            hp_number(62,"TIMER MAX US",hp_prof.lane[HP_P_TIMER].max/tpu);hp_number(90,"MIX MAX US",hp_prof.lane[HP_P_MIX].max/tpu);
+            hp_number(118,"FRAME ROOM US",hp_prof.frames?hp_prof.frame_min/tpu:0);hp_number(146,"GAPS >150US",hp_prof.gap_late);
+        }
     }else if(hp_menu==0){
         if(!sub){hp_text(62,hp_audio_enabled?"MODE AUDIO + MIDI":"MODE MIDI ONLY");hp_text(95,"K1 RIGHT AUDIO / LEFT MIDI");hp_text(130,"POWERED HUB REQUIRED");}
         else if(sub==1){hp_text(62,"UAC1 PCM16 STEREO");hp_number(90,"RATE",hp_v[H_RATE]);hp_text(122,"44100 / 48000 HZ");}
@@ -219,6 +250,19 @@ static uint32_t hp_draw(void)
     }
     return hp_present();
 }
+static uint32_t hp_draw(void)
+{
+#ifndef DINGHY_HOST
+ fm1_irq_off();uint32_t start=fm1_ticks();uint64_t irq=hp_prof.lane[HP_P_TIMER].ticks+hp_prof.lane[HP_P_AUDIO].ticks;fm1_irq_on();
+#endif
+ uint32_t n=hp_draw_work();
+#ifndef DINGHY_HOST
+ fm1_irq_off();uint32_t elapsed=fm1_ticks()-start;uint64_t nested=hp_prof.lane[HP_P_TIMER].ticks+hp_prof.lane[HP_P_AUDIO].ticks-irq;
+ hp_prof_add(HP_P_UI,nested<elapsed?elapsed-(uint32_t)nested:0);fm1_irq_on();
+#endif
+ return n;
+}
+
 static uint32_t hp_edit(uint32_t value,int32_t delta,uint32_t low,uint32_t high)
 {
  if(delta>0&&(uint32_t)delta>high-value)return high;

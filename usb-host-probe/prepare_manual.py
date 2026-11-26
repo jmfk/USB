@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parent.parent
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--revision',default='usb-host-probe-r15')
+    ap.add_argument('--revision',default='usb-host-probe-r17')
     args=ap.parse_args();revision=args.revision
     if not re.fullmatch(r'usb-host-probe-r[1-9][0-9]*',revision):ap.error('Invalid revision')
     release=ROOT/'usb-host-probe/releases'/revision

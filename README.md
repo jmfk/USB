@@ -4,14 +4,14 @@ USB is an independent FM-1 firmware experiment, extracted from M-vave on2026-11-
 Two stereo USB audio sources plus an output device, with per-input USB MIDI1
 routing to any set of output ports. Firmware and hardware support remain experimental.
 
-Latest prepared package: **R14, build118966248**, not confirmed installed or
+Latest prepared package: **R16, build1675001374**, not confirmed installed or
 hardware-verified. The owner-operated R4 installer reported success before the
-rename; R14 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
+rename; R16 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
 model are still pending. MIDI software capacity is32 inputs and32 outputs;
 this is not a measured throughput claim.
 
-- [R14 controls, formats and test procedure](manual-flash/usb-host-probe-r14/README.md)
-- [R14 owner-operated manual installer](<Flash USB R14.command>)
+- [R16 controls, formats and test procedure](manual-flash/usb-host-probe-r16/README.md)
+- [R16 owner-operated manual installer](<Flash USB R16.command>)
 - [Work and verification notes](usb-host-probe/WORK-NOTE.md)
 - [Requirements and decisions](specs/index.md)
 - [Extraction details](MIGRATION.md)
@@ -38,6 +38,28 @@ SYNC/CTRL sets CC/channel and on/off values; REC toggles that CC while running.
 SYNC/OUT selects the USB-host destination with ALGORITHM while stopped. Internal
 clock defaults off; avoid forwarding an external clock to the same destination.
 Hardware timing/jitter and compatibility remain unverified.
+
+R16 shows `C0:nn% C1:OFF R16` on every instrument menu/page. Core0 is the
+cumulative measured-work mean; core1 is unused. Before sampling C0 shows --.
+The Mac header shows both cores and bundled revision with frozen-profile labeling.
+
+## Profiling and Mac benchmark app
+
+R15 adds instrumented core0 workload timing, observed audio frame/buffer margins
+and frozen MIDI/clock counters. These are measured scheduled-work costs, not total
+CPU utilization; core1 remains unused. Collect raw profiles after STOP over MIDI.
+The SwiftUI/CoreMIDI **USB Bench** app guides evaluation → physical instructions
+→ capture → fetch → results. Separate evaluation/results/log views show progress
+and durable searchable host/acquisition/frozen-device events. It provides
+idle/audio, short-message, SysEx
+and clock-receiver scenarios, timestamped round-trip observations and durable
+per-attempt results. Host and device capture windows are independent.
+
+- [Build, wiring and first measurement](benchmark-app/README.md)
+- Local built app: `benchmark-app/dist/USB Bench.app` (ignored build output).
+- Requires a separate MIDI-interface path while FM-1 USB0 is host. Audio sources
+  and audio integrity measurement are external; firmware installation is manual.
+- No hardware profiling or compatibility acceptance has been performed by Codex.
 
 ## MIDI performance and logs
 
@@ -99,7 +121,7 @@ python3 usb-host-probe/build.py --verify-only
 
 This runs focused local checks and the firmware cross-build without making a new
 release or accessing devices. To prepare a new version, omit --verify-only and
-choose an unused revision (the default is nowR15), then run prepare_manual.py for
+choose an unused revision (the default is nowR17), then run prepare_manual.py for
 that same revision. Never overwrite or edit an existing released package.
 No firmware is installed by build.py or prepare_manual.py. Only the owner may
 launch the manual installer; Codex may run its file-only --check.

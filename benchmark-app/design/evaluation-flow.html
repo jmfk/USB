@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>USB Bench — flöde</title>
+<style>body{font-family:system-ui;max-width:780px;margin:2em auto;color:CanvasText;background:Canvas}button{padding:.7em;margin:.3em}section{margin:2em 0}pre{white-space:pre-wrap}</style>
+<h1>USB Bench — beteendeskiss</h1><p>Illustration med exempeldata. Ingen enhet eller sparad körning används.</p>
+<nav><button onclick="view='run';draw()">Utvärdering</button><button onclick="view='result';draw()">Resultat</button><button onclick="view='logs';draw()">Loggar</button></nav>
+<section id="body"></section>
+<script>
+let stage=0,view='run',log=[];
+const titles=['Välj scenario','Anslut FM-1 till Mac','Anslut testkedjan och starta FM-1','Kör utvärdering','Stoppa FM-1 och anslut till Mac','Resultat sparat'];
+const texts=['Scenario och tid. Fler inställningar kan öppnas vid behov.','Paus: behåll strömmen. Profilen armeras när du fortsätter.','Paus: byt USB0 till powered hub, kontrollera rutter och tryck fysisk PLAY.','Exempel på fortlöpande status, räknare och händelser.','Paus: stoppa fysiskt, byt USB0 tillbaka. Hämtning startar när du fortsätter.','Enhetens profil och Macens trafik redovisas separat.'];
+const buttons=['Kör utvärdering','Jag har anslutit FM-1','FM-1 kör — starta mätning','Exempel: mätning slutförd','Jag har anslutit — hämta resultat','Ny utvärdering'];
+function next(){log.push(titles[stage]);stage=(stage+1)%titles.length;if(stage===5)view='result';draw()}
+function draw(){document.getElementById('body').innerHTML=view==='logs'?'<h2>Loggar</h2><pre>'+log.join('\n')+'</pre>':view==='result'?'<h2>Resultat</h2><p>'+(stage===5?'Exempelresultat, tydligt åtskilda mätningar.':'Inget färdigt resultat ännu.')+'</p>':'<h2>'+titles[stage]+'</h2><p>'+texts[stage]+'</p><button onclick="next()">'+buttons[stage]+'</button><p>Senaste händelse: '+(log.at(-1)||'Väntar på start')+'</p>'}
+draw();
+</script>

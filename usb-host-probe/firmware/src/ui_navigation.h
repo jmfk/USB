@@ -6,7 +6,7 @@ static uint8_t hp_menu,hp_main_page[4],hp_sub[4][2],hp_sub_page[4][2][3];
 static uint8_t hp_action_all;
 static uint32_t hp_main_count(uint32_t m){return m==1?2:1;}
 static uint32_t hp_sub_count(void){return hp_menu==2?2:3;}
-static uint32_t hp_page_count(void){return (hp_menu==3&&hp_sub[3][0]<2)||(hp_menu==0&&hp_sub[0][0]==2)||(hp_menu==1&&!hp_main_page[1]&&hp_sub[1][0]==1)?2:1;}
+static uint32_t hp_page_count(void){return (hp_menu==1&&hp_main_page[1]&&hp_sub[1][1]==2)||(hp_menu==3&&hp_sub[3][0]<2)||(hp_menu==0&&hp_sub[0][0]==2)||(hp_menu==1&&!hp_main_page[1]&&hp_sub[1][0]==1)?2:1;}
 static uint32_t hp_selected_sub(void){return hp_sub[hp_menu][hp_main_page[hp_menu]];}
 static uint32_t hp_selected_page(void){return hp_sub_page[hp_menu][hp_main_page[hp_menu]][hp_selected_sub()];}
 static void hp_main_press(uint32_t m){if(hp_menu==m)hp_main_page[m]=(hp_main_page[m]+1)%hp_main_count(m);hp_menu=m;}
