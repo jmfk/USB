@@ -86,10 +86,10 @@ Vanliga USB-hubbar är anslutningar, inte egna MIDI-portar.
 
 1. **USB → MODE**: K1 vänster väljer MIDI ONLY, K1 höger AUDIO+MIDI.
    Lägesbyte kräver stoppat device-läge utan skyddat ljudresultat.
-2. Övre knappraden: **USB**, **MIDI/MON**, **BUS**, tom, tom, **SHIFT**.
+2. Övre knappraden: **USB**, **MIDI/MON**, **BUS**, **SYNC**, tom, tom.
    Ett nytt tryck på vald MIDI-knapp växlar ROUTING/MONITOR. Undre raden har
-   tre kontextuella undermenyer, **ALT**, **PLAY/STOP** och kontextuell **APPLY**.
-   GLO är hållen SHIFT och SEQ hållen ALT; de byter aldrig meny.
+   tre kontextuella undermenyer, en tom position, **PLAY/STOP** och kontextuell **SET/CC**.
+   GLO/SHIFT och SEQ/ALT saknar funktion här och visas släckta.
 3. MIDI/ROUTING har **LINK**, **PORT** och **ACT**. LINK visar vald förbindelse;
    SELECT väljer input och ALGORITHM output. K1 höger slår på, vänster av.
    PORT har två sidor, input/output, med VID/PID/hubbväg/interface/endpoint/kabel.
@@ -97,7 +97,7 @@ Vanliga USB-hubbar är anslutningar, inte egna MIDI-portar.
    valda inputens rutter. Navigation ändrar aldrig rutter. Redigering är stoppad
    medan routing eller MIDI-cleanup körs.
 5. MIDI/MONITOR har TRAF och ERR. USB har MODE, FMT och RES (två resultatsidor).
-   BUS visar STATE eller BUILD. Tryck igen på vald undermeny för nästa sida;
+   BUS har kortknapparna ST och VER för status/version. Tryck igen på vald undermeny för nästa sida;
    varje huvudmenysida och undermeny minns sitt eget läge. M och S i rubriken
    visar respektive sidnummer. Tomma knappositioner är inaktiva.
 6. PLAY upptäcker anslutna enheter; nästa PLAY i READY startar. PLAY under
@@ -105,6 +105,32 @@ Vanliga USB-hubbar är anslutningar, inte egna MIDI-portar.
    Växla menyer fritt utan att stoppa eller ändra USB-rollen. Alla enheter ska
    vara anslutna före upptäckt; ingen hotplug. För AUDIO+MIDI krävs först samma
    datorarmering och kabelbyte som i ljudprovet ovan.
+
+## MIDI-synk (R14)
+
+**SYNC → CLK**: K1 väljer30–300 BPM, K2 slår intern klocka av/på medan
+transporten är stoppad. Klockan är av från start. Aktivering i ledigt device-läge
+väljer MIDI ONLY; ett armerat/skyddat ljudprov ändras inte. PLAY upptäcker först
+USB-portarna; nästa PLAY startar routing och, när aktiverad, MIDI Start +24 PPQN.
+Även enheter med enbart MIDI-utgång kan då upptäckas i MIDI ONLY.
+
+**SYNC → OUT**: ALGORITHM väljer en logisk USB-hostutgång medan stoppad.
+**CTRL**: K1 väljer CC0–119, K2 kanal1–16. Tryck CTRL igen för K1 på-värde och
+K2 av-värde0–127. Standard CC20, kanal1, på127/av0. REC växlar CC enbart på
+SYNC under körning. STOP på valfri sida skickar MIDI Stop och befintlig cleanup;
+ett aktivt CC återställs till av-värdet efter SysEx/kanal-cleanup.
+
+Ett nytt tryck på CLK visar antal köade klockpulser, överhoppade pulser,
+servicefördröjningar och nekade CC. Realtime kan passera SysEx, men CC väntar på
+ett nytt REC-tryck om utgången är upptagen. Sena pulser tas inte igen i en burst.
+Räkneverken är programvaruobservationer, inte uppmätt fysisk precision/jitter.
+Undvik att samtidigt routa en extern klocka till samma utgång. Ingen synkgenerator
+till Mac via USB-device, TRS eller Bluetooth ingår. Inställningarna lever i RAM.
+
+LINK använder färgade IN/OUT-fält, kabelnummer och förbindelselinjer. Markerad
+meny har färgbakgrund; rubrik och M/S-sidor ligger separat. Alla12 knappositioner
+finns kvar, med tomma inaktiva positioner. Panelens faktiska läsbarhet och MIDI-
+timing kräver ägarens hårdvarutest efter manuell installation.
 
 Alla rutter börjar tomma. Matrisen lever bara i RAM; identisk återupptäckt med
 samma VID/PID/hubbväg/interface/endpoint/kabel/jack bevarar den i samma session.

@@ -16,7 +16,7 @@ static void hp_w(uint32_t r,uint32_t v) {if(hp_io_fault)return;sie_wr(r,v);if(us
 static uint32_t hp_r(uint32_t r) {uint32_t v;if(hp_io_fault)return 0;v=sie_rd(r);if(usb.timeouts)hp_io_fault=1;return v;}
 static void hp_wait(uint32_t ms) {uint32_t t=fm1_ms;while(fm1_ms-t<ms)fm1_wdt_feed();}
 static void hp_fail(uint32_t reason)
-{ hp_diag_stop(fm1_ms,HP_FAILED,reason);hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;
+{ hp_diag_stop(fm1_ms,HP_FAILED,reason);hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;hm_sync_active=0;
   if(hm_forward || hm_stopping){hm_forward=hm_stopping=0;if(hm_events)hm_cleanup_bad+=hm_nout;} }
 static int hp_csr0(uint32_t set,uint32_t clear)
 {
@@ -214,12 +214,13 @@ static void hp_tick_work(void)
         if(hp_sched.pending){if(hp_transaction_done()<=0){if(fm1_ms-hp_finish_ms>5)hp_fail(HP_TRANSFER);return;}}
         if(hm_bus.unsafe){hp_fail(HP_MIDI_ERROR);return;}
         if(!hm_usb_poll())return;
-        if(!hm_stopping)hm_panic_begin();
-        hm_panic_pump();hm_usb_service(1);
-        if(hm_panic_done && hm_empty() && !hm_bus.state){hm_stopping=0;hp_running=0;if(hm_cleanup_bad || hm_fault){hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=HP_MIDI_ERROR;}}
+        if(!hm_stopping){hm_panic_begin();hm_sync_cleanup();}
+        hm_panic_pump();if(hm_panic_done)hm_sync_finish_cc();hm_usb_service(1);
+        if(hm_panic_done && !hm_sync_cc_stop_pending && hm_empty() && !hm_bus.state){hm_stopping=0;hp_running=0;if(hm_cleanup_bad || hm_fault){hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=HP_MIDI_ERROR;}}
         else if(fm1_ms-hp_finish_ms>2000){hm_cleanup_bad++;hp_fail(HP_MIDI_ERROR);}
         return;
     }
+    hm_sync_tick(fm1_ticks(),FM1_TICKS_PER_US);
     hm_pump();
     if(hm_fault){hp_request_stop(HP_FAILED,HP_MIDI_ERROR);return;}
     if(!hp_audio_enabled){hm_usb_service(1);return;}
@@ -261,7 +262,7 @@ static void hp_run_begin(void)
     hp_sched=(hp_schedule_t){.next=3,.frame=(uint16_t)hp_frame()};
     hp_begin_ms=hp_last_sof_ms=fm1_ms;hp_frame_ticks=fm1_ticks();hp_finishing=0;
     hp_diag_begin(fm1_ms,HP_BUILD_TAG);
-    hm_forward=1;hp_v[H_STATE]=HP_RUNNING;hp_running=1;
+    hm_forward=1;hm_sync_begin(fm1_ticks());hp_v[H_STATE]=HP_RUNNING;hp_running=1;
 }
 static void hp_host_start(void)
 {
@@ -281,7 +282,7 @@ static void hp_host_start(void)
     if(hp_io_fault || (hp_r(15)&0x20) || hp_enumerate(0,0)<0) {hp_fail(HP_ENUM_ERROR);return;}
     hm_discovery_end();
     if(hp_audio_enabled && !hp_choose(hp_count)) {hp_fail(HP_NO_TRIPLE);return;}
-    if(!hp_audio_enabled && (!hm_nin || !hm_nout)){hp_fail(HP_NO_MIDI);return;}
+    if(!hp_audio_enabled && ((!hm_nin&&!hm_sync_config.enabled) || !hm_nout)){hp_fail(HP_NO_MIDI);return;}
     if((hp_audio_enabled && hp_stream_config()<0) || hm_usb_config()<0) {hp_fail(HP_ENUM_ERROR);return;}
     if(hp_io_fault) {hp_fail(HP_IO);return;}
     hp_begin_ms=hp_last_sof_ms=fm1_ms;

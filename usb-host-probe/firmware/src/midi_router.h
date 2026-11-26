@@ -15,6 +15,8 @@ typedef struct {uint32_t w,r,data[HM_QUEUE];} hm_queue_t;
 static hm_pipe_t hm_pipes[HM_PIPES];
 static hm_port_t hm_inputs[HM_PORTS],hm_outputs[HM_PORTS];
 static hm_queue_t hm_inq[HM_PORTS],hm_outq[HM_PIPES];
+typedef struct {uint16_t bpm;uint8_t enabled,output,channel,cc,on,off;} hm_sync_config_t;
+static hm_sync_config_t hm_sync_config={120,0,0,0,20,127,0};
 static uint32_t hm_routes[HM_PORTS],hm_old_keys[2*HM_PORTS][3];
 static uint8_t hm_npipe,hm_nin,hm_nout,hm_old_in,hm_old_out;
 static uint8_t hm_in_sysex[HM_PORTS],hm_owner[HM_PORTS];
@@ -69,6 +71,11 @@ static uint32_t hm_fingerprint(uint32_t routes)
         hm_key(i<hm_nin?&hm_inputs[i]:&hm_outputs[i-hm_nin],key);
         for(j=0;j<3;j++)h=(h^key[j])*16777619u;
         if(routes && i<hm_nin)h=(h^hm_routes[i])*16777619u;
+    }
+    if(routes&&hm_sync_config.enabled){
+        h=(h^0x53594e43u)*16777619u;h=(h^hm_sync_config.bpm)*16777619u;
+        h=(h^hm_sync_config.output)*16777619u;h=(h^hm_sync_config.channel)*16777619u;
+        h=(h^hm_sync_config.cc)*16777619u;h=(h^hm_sync_config.on)*16777619u;h=(h^hm_sync_config.off)*16777619u;
     }
     return h;
 }
