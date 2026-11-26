@@ -281,3 +281,49 @@ Operator validation: performance.py validate --run-dir RUN_DIR, offline.
 After interruption: repeat arm/fetch with the same package and run directory;
 completed raw/result/checksum files are the source of truth, never a RAM counter.
 R12 is PREPARED_NOT_INSTALLED; all hardware acceptance flags remain false.
+
+
+## PR #1 review fixes / R13, 2026-11-26
+
+Reviewed base9638640 to headad8a3a0 plus one consolidated fix batch. Standing
+policy: fix verified scope-preserving P0–P3 issues; no ignored findings.
+
+Resolved:
+- P1 stop/freeze control window: PLAY and K1/REC could restart or edit a completed
+  MIDI run while USB host ownership still existed but hp_running was zero.
+  Finalize/freeze before controls and gate starts/edits while that transition is
+  pending, including IRQ completion after the main-loop check.
+- P2 failure boundary: hp_fail now captures diagnostic stop before later USB
+  teardown. A regression proves 100 ms forwarding remains 100 ms despite a
+  simulated additional 2000 ms before freeze.
+- P2 same-mode rotation: an already selected AUDIO mode no longer clears HP_ARMED
+  or its run token. Original native reproduction showed state0 instead of1.
+- P2 external display cache: returned updater refusal/failure invalidates cached
+  app text before/after the session through the existing local platform overlay.
+  Regression simulates an external display repaint and verifies full restoration;
+  no updater, installer or device access was started to test this path.
+
+Two independent read-only reviews covered P0–P3; the closing review found no
+remaining verified findings. Highest found/fixed: P1; none unresolved/ignored.
+Hardware behavior remains unverified; passing models do not prove no hardware
+faults. No merge approval is implied.
+
+Verification:
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r13 --verify-only`:
+  PASS after the consolidated fixes.
+- `python3 usb-host-probe/build.py --revision usb-host-probe-r13`: PASS, standard
+  immutable package sealing. New completion/mode/cache/failure regressions,
+  existing C sanitizer USB/audio/MIDI models, 8 performance persistence tests,
+  6 collector and2 descriptor tests, target ROM/MMIO/RAM gates all pass.
+- `python3 usb-host-probe/prepare_manual.py --revision usb-host-probe-r13`:
+  PASS; installer/collector/descriptor/performance file-only --check.
+- Root R13 shell syntax/--check, specs governance/source whitespace and redacted
+  secret scans pass. 279 previous package files were hash checked unchanged.
+- Build1115640002: image42952 B, RAM55076/98304 B, pool30720/344064 B.
+  One existing unused audio-global warning remains in the MIDI-only model;
+  the new misleading-indentation warning was removed in the touched block.
+- Unrelated suites skipped. No CI workflows configured; current local tests use
+  the existing pinned offline build image/toolchain. No hardware acceptance run.
+
+Handoff: Flash USB R13.command / manual-flash/usb-host-probe-r13.
+PREPARED_NOT_INSTALLED. Earlier releases remain byte-identical. Default R14.

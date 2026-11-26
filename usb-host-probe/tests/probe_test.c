@@ -327,6 +327,12 @@ int main(int argc,char **argv)
     reset_case(48000,120);hp_host_start();usb.timeouts=1;hp_tick();
     assert(hp_v[H_STATE]==HP_FAILED && hp_v[H_REASON]==HP_IO);usb.timeouts=0;hp_host_stop();
     midi_model();
+    /* Failure timestamps the forwarding boundary, not later USB teardown. */
+    hp_diag_valid=0;hp_diag_nonce[0]=77;fm1_ms=1000;hp_diag_begin(fm1_ms,HP_BUILD_TAG);
+    hm_events=100;hm_fanout=200;hm_forward=1;hp_running=1;fm1_ms=1100;hp_fail(HP_IO);
+    assert(hp_diag_stopped&&hp_diag[3]==100&&hp_diag[10]==100&&hp_diag[4]==HP_FAILED);
+    fm1_ms=3100;hp_freeze();assert(hp_diag_valid&&hp_diag_frozen[3]==100);
+    puts("PASS: failure diagnostics exclude post-forwarding USB teardown time");
     puts("PASS: real host code/model: discovery, three addresses, serial packets, mix identity, cadence, deadline/error/length aborts");
     return 0;
 }

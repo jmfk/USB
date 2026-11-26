@@ -43,7 +43,9 @@ static void hp_diag_finish(uint32_t now,uint32_t state,uint32_t reason)
  if(!hp_diag_started||hp_diag_valid)return;
  hp_diag_stop(now,state,reason);
  if(!(hp_diag[25]|hp_diag[26]|hp_diag[27]|hp_diag[28])){hp_diag_started=0;return;}
- if(hm_cleanup_bad||hp_diag[4]!=state||hp_diag[5]!=reason)hp_diag_event(now,5,state,hm_cleanup_bad);hp_diag[4]=state;hp_diag[5]=reason;hp_diag[16]=hm_cleanup_bad;
+ if(hm_cleanup_bad||hp_diag[4]!=state||hp_diag[5]!=reason)
+  hp_diag_event(now,5,state,hm_cleanup_bad);
+ hp_diag[4]=state;hp_diag[5]=reason;hp_diag[16]=hm_cleanup_bad;
  uint32_t count=hp_diag_written<HP_DIAG_LOG?hp_diag_written:HP_DIAG_LOG,start=hp_diag_written-count;
  hp_diag[22]=count;hp_diag[23]=start;
  for(uint32_t i=0;i<count;i++)memcpy(hp_diag+29+4*i,hp_diag_log[(start+i)%HP_DIAG_LOG],16);

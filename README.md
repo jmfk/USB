@@ -4,14 +4,14 @@ USB is an independent FM-1 firmware experiment, extracted from M-vave on2026-11-
 Two stereo USB audio sources plus an output device, with per-input USB MIDI1
 routing to any set of output ports. Firmware and hardware support remain experimental.
 
-Latest prepared package: **R12, build1604105024**, not confirmed installed or
+Latest prepared package: **R13, build1115640002**, not confirmed installed or
 hardware-verified. The owner-operated R4 installer reported success before the
-rename; R12 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
+rename; R13 remains prepared only. Digitakt II format inspection and the exact Behringer mixer
 model are still pending. MIDI software capacity is32 inputs and32 outputs;
 this is not a measured throughput claim.
 
-- [R12 controls, formats and test procedure](manual-flash/usb-host-probe-r12/README.md)
-- [R12 owner-operated manual installer](<Flash USB R12.command>)
+- [R13 controls, formats and test procedure](manual-flash/usb-host-probe-r13/README.md)
+- [R13 owner-operated manual installer](<Flash USB R13.command>)
 - [Work and verification notes](usb-host-probe/WORK-NOTE.md)
 - [Requirements and decisions](specs/index.md)
 - [Extraction details](MIGRATION.md)
@@ -37,7 +37,7 @@ R12 adds MIDI/MON → PERF and frozen SysEx diagnostic reports. Use the packaged
 `performance.py arm --run-dir ...` before a physical run, STOP on FM-1, then
 reconnect USB0 to the Mac and use `performance.py fetch --run-dir ...` with the
 same directory. `report`, `validate` and `compare` work offline. See the
-[R12 runbook](manual-flash/usb-host-probe-r12/README.md#midi-prestanda-och-diagnostikloggar-r12-och-senare).
+[R13 runbook](manual-flash/usb-host-probe-r13/README.md#midi-prestanda-och-diagnostikloggar-r12-och-senare).
 
 Reports contain routing events/fan-out per second, ACKed packet counters before
 cleanup, retries, backpressure, errors, sampled queue peaks, service durations
@@ -48,6 +48,12 @@ CRC-checked reports and completion checksums are fsynced before device ACK.
 Interrupted downloads resume without restarting a physical run. Ordinary routing
 without diagnostic arming remains independent of a computer. No real benchmark
 or device access has been performed by Codex.
+
+Use R13 for the reviewed fixes: stopped-run evidence is frozen before controls
+can restart discovery or edit routes; failed-run timing stops at the failure
+boundary; selecting an unchanged mode preserves an armed audio attempt; returning
+from a refused/failed updater invalidates the display cache. Earlier packages
+remain immutable historical artifacts.
 
 ## Layout
 
@@ -85,7 +91,7 @@ python3 usb-host-probe/build.py --verify-only
 
 This runs focused local checks and the firmware cross-build without making a new
 release or accessing devices. To prepare a new version, omit --verify-only and
-choose an unused revision (the default is nowR13), then run prepare_manual.py for
+choose an unused revision (the default is nowR14), then run prepare_manual.py for
 that same revision. Never overwrite or edit an existing released package.
 No firmware is installed by build.py or prepare_manual.py. Only the owner may
 launch the manual installer; Codex may run its file-only --check.

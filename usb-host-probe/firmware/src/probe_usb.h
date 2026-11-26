@@ -16,7 +16,7 @@ static void hp_w(uint32_t r,uint32_t v) {if(hp_io_fault)return;sie_wr(r,v);if(us
 static uint32_t hp_r(uint32_t r) {uint32_t v;if(hp_io_fault)return 0;v=sie_rd(r);if(usb.timeouts)hp_io_fault=1;return v;}
 static void hp_wait(uint32_t ms) {uint32_t t=fm1_ms;while(fm1_ms-t<ms)fm1_wdt_feed();}
 static void hp_fail(uint32_t reason)
-{ hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;
+{ hp_diag_stop(fm1_ms,HP_FAILED,reason);hp_v[H_STATE]=HP_FAILED;hp_v[H_REASON]=reason;hp_running=0;
   if(hm_forward || hm_stopping){hm_forward=hm_stopping=0;if(hm_events)hm_cleanup_bad+=hm_nout;} }
 static int hp_csr0(uint32_t set,uint32_t clear)
 {

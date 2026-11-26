@@ -2,6 +2,7 @@
 #include <stdint.h>
 static volatile uint8_t hp_owns_usb;
 static void hp_tick(void);
+static void hp_ui_invalidate(void);
 static int hp_sysex(const uint8_t *,uint32_t);
 #define FELUCCA_UAC 0
 #define STORE_MAGIC 0x31504855u
@@ -40,6 +41,7 @@ enum {HP_UI_BOXES=24,HP_UI_TEXT=40};
 typedef struct {uint16_t x,y,w;uint8_t align;char text[HP_UI_TEXT];} hp_ui_box_t;
 static hp_ui_box_t hp_ui_frames[2][HP_UI_BOXES];
 static uint8_t hp_ui_frame,hp_ui_count[2],hp_ui_valid;
+static void hp_ui_invalidate(void){hp_ui_valid=0;}
 static void hp_box(uint32_t x,uint32_t y,uint32_t w,const char *text,uint32_t align)
 {
     uint32_t i=0;hp_ui_box_t *box;
@@ -109,7 +111,7 @@ static void hp_port_heading(uint32_t y,const char *name,uint32_t index,const hm_
 }
 static uint32_t hp_draw(void)
 {
-    uint32_t state=hp_v[H_STATE],editable=!hp_running && !hm_stopping;
+    uint32_t state=hp_v[H_STATE],editable=!hp_running && !hm_stopping && (!hp_owns_usb || state==HP_READY);
     if(state>HP_READY)state=HP_FAILED;
     hp_ui_count[hp_ui_frame]=0;
     char title[40];uint32_t sub=hp_selected_sub(),page=hp_selected_page();
@@ -166,8 +168,8 @@ static void hp_controls(uint32_t pressed)
     if(pressed&(1u<<BTN_HOME))hp_sub_press(0);
     if(pressed&(1u<<BTN_SAVE))hp_sub_press(1);
     if(pressed&(1u<<BTN_ARP))hp_sub_press(2);
-    uint32_t editable=!hp_running&&!hm_stopping;
-    if(hp_menu==0&&!hp_selected_sub()&&k&&!hp_owns_usb&&editable&&(!hp_frozen_valid||!hp_frozen[H_RUN])){
+    uint32_t editable=!hp_running&&!hm_stopping&&(!hp_owns_usb||hp_v[H_STATE]==HP_READY);
+    if(hp_menu==0&&!hp_selected_sub()&&k&&hp_audio_enabled!=(k>0)&&!hp_owns_usb&&editable&&(!hp_frozen_valid||!hp_frozen[H_RUN])){
         hp_frozen_valid=0;hp_audio_enabled=k>0;hp_v[H_STATE]=HP_IDLE;
     }
     if(hp_link_view()&&hm_nin&&hm_nout&&editable&&k){uint32_t mask=hm_routes[hp_input];hm_route_set(hp_input,k>0?mask|(1u<<hp_output_port):mask&~(1u<<hp_output_port));}
@@ -179,21 +181,30 @@ static void hp_controls(uint32_t pressed)
     if(pressed&(1u<<BTN_PLAY)){
         if(hp_v[H_STATE]==HP_READY){fm1_irq_off();hp_run_begin();fm1_irq_on();}
         else if(hp_owns_usb && hp_running){fm1_irq_off();hp_request_stop(HP_STOPPED,HP_INCOMPLETE);fm1_irq_on();}
-        else if((!hp_audio_enabled && (!hp_frozen_valid || !hp_frozen[H_RUN])) || hp_v[H_STATE]==HP_ARMED){
+        else if(!hp_owns_usb && ((!hp_audio_enabled && (!hp_frozen_valid || !hp_frozen[H_RUN])) || hp_v[H_STATE]==HP_ARMED)){
             if(!hp_audio_enabled){hp_frozen_valid=0;hp_v[H_RUN]=0;hp_v[H_RATE]=48000;hp_v[H_DURATION]=0;}
             hp_v[H_STATE]=HP_ENUM;hp_draw();hp_defer_run=1;hp_host_start();
         }
     }
+}
+/* Release the stopped host and freeze evidence before accepting another action.
+ * Controls also gate the IRQ completion window after this check. */
+static uint32_t hp_finish_if_stopped(void)
+{
+ if(hp_owns_usb && !hp_running && hp_v[H_STATE]!=HP_ENUM && hp_v[H_STATE]!=HP_READY){
+  hp_host_stop();hp_freeze();hp_ui_invalidate();return 1;
+ }
+ return 0;
 }
 static void app_main(void)
 {
     uint32_t draw=0;palette_set(4);
     hp_v[H_MAGIC]=0x31504855u;hp_v[H_BUILD]=HP_BUILD_TAG;hp_v[H_STATE]=HP_IDLE;
     for(;;){
-        uint32_t released,pressed;platform_poll();pressed=fm1_input_edges(&released);(void)released;
+        uint32_t released,pressed;platform_poll();if(hp_finish_if_stopped())draw=0;pressed=fm1_input_edges(&released);(void)released;
         hp_controls(pressed);
         if(pressed)draw=0;
-        if(hp_owns_usb && !hp_running && hp_v[H_STATE]!=HP_ENUM && hp_v[H_STATE]!=HP_READY){hp_host_stop();hp_freeze();draw=0;}
+        if(hp_finish_if_stopped())draw=0;
         if(!draw || fm1_ms-draw>=250){hp_draw();draw=fm1_ms?fm1_ms:1;}
     }
 }
